@@ -2,6 +2,7 @@ package com.example.dailymealrecomment
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -81,9 +82,15 @@ class CameraActivity : AppCompatActivity() {
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    val msg = "Photo capture succeeded: ${output.savedUri}"
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+                    val savedUri = output.savedUri ?: return
+                    val msg = "Photo capture succeeded: $savedUri"
                     Log.d(TAG, msg)
+
+                    val intent = Intent(this@CameraActivity, FoodAnalysisActivity::class.java).apply {
+                        putExtra("image_uri", savedUri.toString())
+                    }
+                    startActivity(intent)
+                    finish()
                 }
             }
         )
