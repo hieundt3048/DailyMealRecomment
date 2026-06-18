@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F7FA"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Thiết lập cá nhân"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#2D3436"
+            android:layout_marginBottom="24dp"/>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Chỉ số cơ thể"
+                    android:textStyle="bold"
+                    android:textColor="#11998e"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="12dp"/>
+
+                <EditText
+                    android:id="@+id/edtHeight"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:hint="Chiều cao (cm)"
+                    android:inputType="numberDecimal"
+                    android:background="@android:color/transparent" />
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" android:layout_marginVertical="4dp"/>
+
+                <EditText
+                    android:id="@+id/edtWeight"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:hint="Cân nặng (kg)"
+                    android:inputType="numberDecimal"
+                    android:background="@android:color/transparent" />
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" android:layout_marginVertical="4dp"/>
+
+                <EditText
+                    android:id="@+id/edtAge"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:hint="Tuổi"
+                    android:inputType="number"
+                    android:background="@android:color/transparent" />
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" android:layout_marginVertical="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Giới tính"
+                    android:textSize="14sp"
+                    android:textColor="#777777"
+                    android:layout_marginBottom="4dp"/>
+
+                <RadioGroup
+                    android:id="@+id/rgGender"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/rbMale"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nam"
+                        android:checked="true"
+                        android:layout_marginRight="24dp"/>
+
+                    <RadioButton
+                        android:id="@+id/rbFemale"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nữ" />
+                </RadioGroup>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mục tiêu của bạn"
+                    android:textStyle="bold"
+                    android:textColor="#11998e"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="12dp"/>
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupGoal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:checkedChip="@+id/chipMaintain">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipLose"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Giảm cân" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipMaintain"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Giữ dáng" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGain"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tăng cân" />
+                </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Chế độ ăn hiện tại"
+                    android:textStyle="bold"
+                    android:textColor="#11998e"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="12dp"/>
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupDiet"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:checkedChip="@+id/chipNormal">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipNormal"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bình thường" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipVegan"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Thuần chay" />
+                </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <Button
+            android:id="@+id/btnCalculate"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:backgroundTint="#11998e"
+            android:text="TÍNH TOÁN CALO"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            app:cornerRadius="16dp"
+            android:layout_marginTop="12dp"
+            android:elevation="8dp"/>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            app:cardCornerRadius="16dp"
+            app:cardBackgroundColor="#E8F5E9"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:gravity="center">
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="KẾT QUẢ PHÂN TÍCH"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#2E7D32"
+                    android:letterSpacing="0.1"/>
+
+                <TextView
+                    android:id="@+id/tvResult"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--- Kcal"
+                    android:textSize="36sp"
+                    android:textStyle="bold"
+                    android:textColor="#1B5E20"
+                    android:layout_marginTop="8dp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <Button
+            android:id="@+id/btnSignOut"
+            android:layout_marginLeft="120dp"
+            android:layout_width="130dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#FF7675"
+            android:text="ĐĂNG XUẤT"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+</ScrollView>
