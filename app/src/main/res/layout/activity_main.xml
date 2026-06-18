@@ -14,7 +14,8 @@
         android:layout_height="?attr/actionBarSize"
         app:layout_constraintTop_toTopOf="parent"
         app:title="Daily Meal Recommendation"
-        app:titleCentered="true" />
+        app:titleCentered="true"
+        app:menu="@menu/main_menu" />
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/card_camera"

@@ -1,4 +1,4 @@
-package com.example.dailymealrecomment
+package com.example.dailymealrecomment.model
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize

@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.RecyclerView
 import com.example.dailymealrecomment.databinding.ItemFoodResultBinding
+import com.example.dailymealrecomment.model.FoodItem
 
 class FoodResultAdapter(private val items: MutableList<FoodItem>) :
     RecyclerView.Adapter<FoodResultAdapter.ViewHolder>() {
