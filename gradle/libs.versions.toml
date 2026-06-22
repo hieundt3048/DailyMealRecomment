@@ -1,4 +1,5 @@
 [versions]
+kotlin = "2.0.21"
 agp = "9.2.1"
 coreKtx = "1.13.0"
 junit = "4.13.2"
@@ -39,7 +40,8 @@ firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version = "2.0.21-1.0.27" }
-

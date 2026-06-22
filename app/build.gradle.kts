@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("org.jetbrains.kotlin.android")
     id("kotlin-parcelize")
     alias(libs.plugins.google.services)
 }
@@ -48,10 +49,6 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-
-    // Hilt
-    // implementation(libs.hilt.android)
-    // ksp(libs.hilt.compiler)
 
     // Navigation
     implementation(libs.androidx.navigation.fragment.ktx)
