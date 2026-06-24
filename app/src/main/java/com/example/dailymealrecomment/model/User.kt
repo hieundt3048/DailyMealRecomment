@@ -1,9 +1,4 @@
 package com.example.dailymealrecomment.model
-
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-
-@Parcelize
 data class User(
     val uid: String = "",
     val name: String = "",
@@ -19,4 +14,4 @@ data class User(
     var proteinTarget: Double = 0.0,
     var carbsTarget: Double = 0.0,
     var fatTarget: Double = 0.0
-) : Parcelable
+)

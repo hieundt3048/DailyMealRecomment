@@ -1,13 +1,17 @@
 package com.example.dailymealrecomment
 
 import android.content.Intent
+<<<<<<< HEAD
 import android.net.Uri
+=======
+>>>>>>> master
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+<<<<<<< HEAD
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.dailymealrecomment.databinding.ActivityMainBinding
 import com.example.dailymealrecomment.model.FoodItem
@@ -27,12 +31,19 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
     }
+=======
+import com.example.dailymealrecomment.databinding.ActivityMainBinding
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
+>>>>>>> master
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+<<<<<<< HEAD
 
         auth = FirebaseAuth.getInstance()
         if (auth.currentUser == null) {
@@ -42,11 +53,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+=======
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
+>>>>>>> master
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
+<<<<<<< HEAD
         setupToolbar()
         setupRecyclerView()
         setupDashboardMock()
@@ -58,6 +73,11 @@ class MainActivity : AppCompatActivity() {
         binding.btnGallery.setOnClickListener {
             pickImageLauncher.launch("image/*")
         }
+=======
+        binding.btnCamera.setOnClickListener {
+            startActivity(Intent(this, CameraActivity::class.java))
+        }
+>>>>>>> master
     }
 
     private fun setupToolbar() {

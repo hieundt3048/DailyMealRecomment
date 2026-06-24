@@ -7,10 +7,22 @@
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
+<<<<<<< HEAD
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface">
+=======
+    <Button
+        android:id="@+id/btnCamera"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Open Camera"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+>>>>>>> master
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
