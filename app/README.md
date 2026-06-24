@@ -34,19 +34,8 @@
 
 * **Frontend:** Mobile App
 * **Backend:** Kotlin
-* **Database:** SQL Server / PostgreSQL / MySQL
+* **Database:** FireBase
 * **AI Service:** Integration với các mô hình nhận diện hình ảnh món ăn (Computer Vision API)
 * **Authentication:** Google OAuth2
 
 ---
-
-## 👥 Thành viên thực hiện
-
-* **Nguyễn Di Khang** - Trưởng nhóm
-* ... *(Bổ sung tên các thành viên khác tại đây)* ...
-
----
-
-## 📝 Hướng dẫn cài đặt & Chạy ứng dụng
-
-*(Phần này sẽ được cập nhật chi tiết sau khi nhóm hoàn thiện cấu trúc mã nguồn)*

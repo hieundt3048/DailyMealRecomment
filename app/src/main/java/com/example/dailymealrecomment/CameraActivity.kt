@@ -2,6 +2,10 @@ package com.example.dailymealrecomment
 
 import android.Manifest
 import android.content.ContentValues
+<<<<<<< HEAD
+import android.content.Intent
+=======
+>>>>>>> master
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -33,7 +37,11 @@ class CameraActivity : AppCompatActivity() {
         viewBinding = ActivityCameraBinding.inflate(layoutInflater)
         setContentView(viewBinding.root)
 
+<<<<<<< HEAD
+        // Yêu cầu quyền truy cập camera
+=======
         // Request camera permissions
+>>>>>>> master
         if (allPermissionsGranted()) {
             startCamera()
         } else {
@@ -42,17 +50,28 @@ class CameraActivity : AppCompatActivity() {
             )
         }
 
+<<<<<<< HEAD
+        // Set up listeners cho nút chụp ảnh
+=======
         // Set up the listeners for take photo button
+>>>>>>> master
         viewBinding.imageCaptureButton.setOnClickListener { takePhoto() }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
     private fun takePhoto() {
+<<<<<<< HEAD
+
+        val imageCapture = imageCapture ?: return
+
+        // Tạo tên có dấu thời gian và mục nhập MediaStore.
+=======
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
 
         // Create time stamped name and MediaStore entry.
+>>>>>>> master
         val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
             .format(System.currentTimeMillis())
         val contentValues = ContentValues().apply {
@@ -63,15 +82,24 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
+<<<<<<< HEAD
+        // Tạo đối tượng tùy chọn đầu ra chứa tệp và dữ liệu.
+=======
         // Create output options object which contains file + metadata
+>>>>>>> master
         val outputOptions = ImageCapture.OutputFileOptions
             .Builder(contentResolver,
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 contentValues)
             .build()
 
+<<<<<<< HEAD
+
+        // Thiết lập trình lắng nghe chụp ảnh, được kích hoạt sau khi ảnh đã được chụp.
+=======
         // Set up image capture listener, which is triggered after photo has
         // been taken
+>>>>>>> master
         imageCapture.takePicture(
             outputOptions,
             ContextCompat.getMainExecutor(this),
@@ -81,9 +109,21 @@ class CameraActivity : AppCompatActivity() {
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+<<<<<<< HEAD
+                    val savedUri = output.savedUri ?: return
+                    val msg = "Photo capture succeeded: $savedUri"
+                    Log.d(TAG, msg)
+
+                    val intent = Intent(this@CameraActivity, FoodAnalysisActivity::class.java).apply {
+                        putExtra("image_uri", savedUri.toString())
+                    }
+                    startActivity(intent)
+                    finish()
+=======
                     val msg = "Photo capture succeeded: ${output.savedUri}"
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, msg)
+>>>>>>> master
                 }
             }
         )
@@ -93,7 +133,11 @@ class CameraActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
+<<<<<<< HEAD
+            // Liên kết vòng đời của camera với chủ sở hữu vòng đời.
+=======
             // Used to bind the lifecycle of cameras to the lifecycle owner
+>>>>>>> master
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
             // Preview
@@ -106,6 +150,16 @@ class CameraActivity : AppCompatActivity() {
             imageCapture = ImageCapture.Builder()
                 .build()
 
+<<<<<<< HEAD
+            // Chọn camera sau làm mặc định.
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+            try {
+                //Hủy liên kết các trường hợp sử dụng trước khi liên kết lại.
+                cameraProvider.unbindAll()
+
+                // Liên kết các trường hợp sử dụng với camera
+=======
             // Select back camera as a default
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
@@ -114,6 +168,7 @@ class CameraActivity : AppCompatActivity() {
                 cameraProvider.unbindAll()
 
                 // Bind use cases to camera
+>>>>>>> master
                 cameraProvider.bindToLifecycle(
                     this, cameraSelector, preview, imageCapture)
 
