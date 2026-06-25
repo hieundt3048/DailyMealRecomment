@@ -1,12 +1,12 @@
-package com.example.btl.data.model
+package com.example.dailymealrecomment.data.model
 
 enum class Goal {
-    GAIN_WEIGHT,    // Tăng cân
-    LOSE_WEIGHT,    // Giảm cân
-    MAINTAIN_WEIGHT // Giữ dáng
+    GAIN_WEIGHT,
+    LOSE_WEIGHT,
+    MAINTAIN_WEIGHT,
 }
 
 enum class DietType {
-    VEGAN,          // Thuần chay
-    NORMAL          // Bình thường
+    VEGAN,
+    NORMAL,
 }

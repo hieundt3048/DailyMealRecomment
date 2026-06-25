@@ -10,39 +10,25 @@ import com.example.dailymealrecomment.model.FoodItem
 
 class FoodAnalysisActivity : AppCompatActivity() {
     private lateinit var binding: ActivityFoodAnalysisBinding
-    private lateinit var adapter: FoodResultAdapter
-    private val foodItems = mutableListOf<FoodItem>()
+    private val foodItems = mutableListOf(FoodItem("Món ăn nhận diện", 100, 200))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityFoodAnalysisBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val imageUriString = intent.getStringExtra("image_uri")
-        if (imageUriString != null) {
-            binding.imgFood.setImageURI(Uri.parse(imageUriString))
+        intent.getStringExtra(EXTRA_IMAGE_URI)?.let { uri ->
+            binding.imgFood.setImageURI(Uri.parse(uri))
         }
-
-        setupRecyclerView()
-        
-        // Mock data for now, will be replaced by Gemini API results
-        mockData()
-
+        binding.rvFoodItems.layoutManager = LinearLayoutManager(this)
+        binding.rvFoodItems.adapter = FoodResultAdapter(foodItems)
         binding.btnSave.setOnClickListener {
-            Toast.makeText(this, "Saved ${foodItems.size} items to diary", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.food_items_ready, foodItems.size), Toast.LENGTH_SHORT).show()
             finish()
         }
     }
 
-    private fun setupRecyclerView() {
-        adapter = FoodResultAdapter(foodItems)
-        binding.rvFoodItems.layoutManager = LinearLayoutManager(this)
-        binding.rvFoodItems.adapter = adapter
-    }
-
-    private fun mockData() {
-        foodItems.add(FoodItem("Grilled Chicken", 200, 330, 31.0, 0.0, 15.0))
-        foodItems.add(FoodItem("Salad", 100, 50, 2.0, 10.0, 0.5))
-        adapter.notifyDataSetChanged()
+    companion object {
+        const val EXTRA_IMAGE_URI = "image_uri"
     }
 }

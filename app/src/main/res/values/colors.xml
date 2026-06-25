@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="food_green_900">#0B4F32</color>
+    <color name="food_green_800">#11663F</color>
+    <color name="food_green_700">#16834E</color>
+    <color name="food_green_600">#1FAE63</color>
+    <color name="food_green_500">#2BCB73</color>
+    <color name="food_green_300">#86DFA7</color>
+    <color name="food_green_100">#DDF7E7</color>
+    <color name="food_green_50">#F1FBF4</color>
+    <color name="food_lime">#B9DB57</color>
+    <color name="food_surface">#F7FBF8</color>
+    <color name="food_surface_card">#FFFFFF</color>
+    <color name="food_text_primary">#173326</color>
+    <color name="food_text_secondary">#617168</color>
+    <color name="food_outline">#C6D8CC</color>
+    <color name="food_error">#BA1A1A</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
 </resources>

@@ -1,7 +1,18 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.DailyMealRecomment" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+<resources>
+    <style name="Base.Theme.DailyMealRecomment" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/food_green_600</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/food_green_100</item>
+        <item name="colorOnPrimaryContainer">@color/food_green_900</item>
+        <item name="colorSecondary">@color/food_green_700</item>
+        <item name="colorSurface">@color/food_surface</item>
+        <item name="colorOnSurface">@color/food_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/food_text_secondary</item>
+        <item name="colorOutline">@color/food_outline</item>
+        <item name="colorError">@color/food_error</item>
+        <item name="android:windowBackground">@color/food_surface</item>
+        <item name="android:statusBarColor">@color/food_green_800</item>
+        <item name="android:navigationBarColor">@color/food_surface</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

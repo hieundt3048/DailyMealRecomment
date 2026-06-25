@@ -1,117 +1,124 @@
 package com.example.dailymealrecomment
 
 import android.content.Intent
-<<<<<<< HEAD
 import android.net.Uri
-=======
->>>>>>> master
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-<<<<<<< HEAD
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.dailymealrecomment.data.SessionPreferences
 import com.example.dailymealrecomment.databinding.ActivityMainBinding
 import com.example.dailymealrecomment.model.FoodItem
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private lateinit var auth: FirebaseAuth
-    private val loggedItems = mutableListOf<FoodItem>()
-    private lateinit var adapter: FoodLogAdapter
+    private lateinit var sessionPreferences: SessionPreferences
+    private val firebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private val loggedItems = mutableListOf(
+        FoodItem("Sữa chua", 150, 150),
+        FoodItem("Hạt hạnh nhân", 30, 170),
+    )
+    private val smokeTestMode: Boolean
+        get() = BuildConfig.DEBUG && intent.getBooleanExtra(LoginActivity.EXTRA_SMOKE_TEST, false)
 
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            val intent = Intent(this, FoodAnalysisActivity::class.java).apply {
-                putExtra("image_uri", it.toString())
-            }
-            startActivity(intent)
-        }
+        uri?.let(::openAnalysis)
     }
-=======
-import com.example.dailymealrecomment.databinding.ActivityMainBinding
-
-class MainActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
->>>>>>> master
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-<<<<<<< HEAD
+        sessionPreferences = SessionPreferences(this)
 
-        auth = FirebaseAuth.getInstance()
-        if (auth.currentUser == null) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
+        if (firebaseAuth.currentUser == null && !smokeTestMode) {
+            sessionPreferences.clear()
+            openLogin()
             return
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
-=======
-        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
->>>>>>> master
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-
-<<<<<<< HEAD
+        binding.rvTodayLog.layoutManager = LinearLayoutManager(this)
+        binding.rvTodayLog.adapter = FoodLogAdapter(loggedItems)
+        binding.toolbar.subtitle = firebaseAuth.currentUser?.displayName
         setupToolbar()
-        setupRecyclerView()
-        setupDashboardMock()
-
-        binding.btnCamera.setOnClickListener {
-            startActivity(Intent(this, CameraActivity::class.java))
-        }
-
-        binding.btnGallery.setOnClickListener {
-            pickImageLauncher.launch("image/*")
-        }
-=======
-        binding.btnCamera.setOnClickListener {
-            startActivity(Intent(this, CameraActivity::class.java))
-        }
->>>>>>> master
+        setupImageActions()
+        updateDashboard(if (smokeTestMode) 2_000 else sessionPreferences.dailyCalorieTarget)
+        if (!smokeTestMode) loadCalorieTarget()
     }
 
     private fun setupToolbar() {
         binding.toolbar.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.action_logout -> {
-                    auth.signOut()
-                    startActivity(Intent(this, LoginActivity::class.java))
-                    finish()
-                    true
-                }
-                else -> false
+            if (item.itemId == R.id.action_logout) {
+                signOut()
+                true
+            } else {
+                false
             }
         }
     }
 
-    private fun setupRecyclerView() {
-        adapter = FoodLogAdapter(loggedItems)
-        binding.rvTodayLog.layoutManager = LinearLayoutManager(this)
-        binding.rvTodayLog.adapter = adapter
-
-        // Mock items
-        loggedItems.add(FoodItem("Greek Yogurt", 150, 150, 15.0, 10.0, 2.0))
-        loggedItems.add(FoodItem("Almonds", 30, 170, 6.0, 6.0, 14.0))
-        adapter.notifyDataSetChanged()
+    private fun setupImageActions() {
+        binding.btnCamera.setOnClickListener {
+            startActivity(Intent(this, CameraActivity::class.java))
+        }
+        binding.btnGallery.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
     }
 
-    private fun setupDashboardMock() {
-        // Mock values for the circular indicator
-        binding.progressCalories.progress = 40
-        binding.tvCaloriesRemaining.text = "1420"
-        
-        binding.tvProteinValue.text = "21/120g"
-        binding.tvCarbsValue.text = "16/250g"
-        binding.tvFatValue.text = "16/60g"
+    private fun loadCalorieTarget() {
+        val user = firebaseAuth.currentUser ?: return
+        firestore.collection("users").document(user.uid).get()
+            .addOnSuccessListener { document ->
+                val target = document.getLong("dailyCalorieTarget")?.toInt()
+                    ?: sessionPreferences.dailyCalorieTarget
+                updateDashboard(target)
+            }
+            .addOnFailureListener { updateDashboard(sessionPreferences.dailyCalorieTarget) }
+    }
+
+    private fun updateDashboard(targetCalories: Int) {
+        val consumedCalories = loggedItems.sumOf { it.calories }
+        val remainingCalories = (targetCalories - consumedCalories).coerceAtLeast(0)
+        binding.tvCaloriesConsumed.text = getString(R.string.calories_consumed, consumedCalories)
+        binding.tvCaloriesTarget.text = getString(R.string.calories_target, targetCalories)
+        binding.tvCaloriesRemaining.text = remainingCalories.toString()
+        binding.progressCalories.progress = if (targetCalories > 0) {
+            ((consumedCalories * 100.0) / targetCalories).toInt().coerceIn(0, 100)
+        } else {
+            0
+        }
+    }
+
+    private fun openAnalysis(uri: Uri) {
+        startActivity(Intent(this, FoodAnalysisActivity::class.java).apply {
+            putExtra(FoodAnalysisActivity.EXTRA_IMAGE_URI, uri.toString())
+        })
+    }
+
+    private fun signOut() {
+        firebaseAuth.signOut()
+        sessionPreferences.clear()
+        lifecycleScope.launch {
+            runCatching {
+                CredentialManager.create(this@MainActivity)
+                    .clearCredentialState(ClearCredentialStateRequest())
+            }
+            openLogin()
+        }
+    }
+
+    private fun openLogin() {
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
     }
 }

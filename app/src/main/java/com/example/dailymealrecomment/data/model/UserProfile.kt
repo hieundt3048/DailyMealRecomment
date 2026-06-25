@@ -1,4 +1,4 @@
-package com.example.btl.data.model
+package com.example.dailymealrecomment.data.model
 
 data class UserProfile(
     val heightCm: Double,
@@ -7,5 +7,5 @@ data class UserProfile(
     val isMale: Boolean,
     val goal: Goal,
     val dietType: DietType,
-    val activityLevel: Double // Hệ số vận động (VD: 1.2 cho ít vận động, 1.55 cho vận động vừa)
+    val activityLevel: Double,
 )

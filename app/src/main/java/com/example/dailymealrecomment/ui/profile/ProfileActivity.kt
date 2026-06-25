@@ -1,95 +1,198 @@
-package com.example.btl.ui.profile
+package com.example.dailymealrecomment.ui.profile
 
-import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.RadioGroup
-import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
-import com.example.btl.R
-import com.example.btl.data.model.DietType
-import com.example.btl.data.model.Goal
-import com.google.android.material.chip.ChipGroup
 import android.content.Intent
-import androidx.activity.viewModels
-import com.example.btl.ui.auth.AuthViewModel
-import com.example.btl.ui.auth.LoginActivity
+import android.os.Bundle
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
+import androidx.lifecycle.lifecycleScope
+import com.example.dailymealrecomment.BuildConfig
+import com.example.dailymealrecomment.LoginActivity
+import com.example.dailymealrecomment.MainActivity
+import com.example.dailymealrecomment.R
+import com.example.dailymealrecomment.data.SessionPreferences
+import com.example.dailymealrecomment.data.model.DietType
+import com.example.dailymealrecomment.data.model.Goal
+import com.example.dailymealrecomment.data.model.UserProfile
+import com.example.dailymealrecomment.databinding.ActivityProfileBinding
+import com.example.dailymealrecomment.utilities.CalorieCalculator
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.launch
 
 class ProfileActivity : AppCompatActivity() {
-    private val viewModel: ProfileViewModel by viewModels()
-    private val authViewModel: AuthViewModel by viewModels()
+    private lateinit var binding: ActivityProfileBinding
+    private lateinit var sessionPreferences: SessionPreferences
+    private val firebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+
+    private val smokeTestMode: Boolean
+        get() = BuildConfig.DEBUG && intent.getBooleanExtra(LoginActivity.EXTRA_SMOKE_TEST, false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_profile)
+        binding = ActivityProfileBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        sessionPreferences = SessionPreferences(this)
 
-        // 1. Ánh xạ các thành phần giao diện từ file XML
-        val edtHeight = findViewById<EditText>(R.id.edtHeight)
-        val edtWeight = findViewById<EditText>(R.id.edtWeight)
-        val edtAge = findViewById<EditText>(R.id.edtAge) ?: EditText(this).apply { setText("25") } // Phòng trường hợp XML cũ chưa có edtAge
-        val rgGender = findViewById<RadioGroup>(R.id.rgGender) ?: RadioGroup(this) // Phòng hờ lỗi layout
-
-        val chipGroupGoal = findViewById<ChipGroup>(R.id.chipGroupGoal)
-        val btnCalculate = findViewById<Button>(R.id.btnCalculate)
-        val tvResult = findViewById<TextView>(R.id.tvResult)
-
-        // 2. Lắng nghe dữ liệu (Calo) từ ViewModel trả về
-        viewModel.targetCalories.observe(this) { calories ->
-            // Khi ViewModel tính toán xong, cập nhật ngay lên giao diện
-            tvResult.text = "$calories Kcal"
-            Toast.makeText(this, "AI đã tối ưu thực đơn cho bạn, xem ngay!", Toast.LENGTH_SHORT).show()
+        if (firebaseAuth.currentUser == null && !smokeTestMode) {
+            openLogin()
+            return
         }
 
-        // 3. Xử lý sự kiện khi người dùng nhấn nút "TÍNH TOÁN CALO BẰNG AI"
-        val chipGroupDiet = findViewById<ChipGroup>(R.id.chipGroupDiet)
+        sessionPreferences.cachedProfile()?.let(::showProfile)
+        if (!smokeTestMode) loadProfileFromFirestore()
+        binding.btnCalculate.setOnClickListener { saveProfileAndContinue() }
+        binding.btnSignOut.setOnClickListener { signOut() }
+    }
 
-        btnCalculate.setOnClickListener {
-            val heightStr = edtHeight.text.toString()
-            val weightStr = edtWeight.text.toString()
-            val ageStr = edtAge.text.toString()
+    private fun saveProfileAndContinue() {
+        val height = binding.edtHeight.text.toString().toDoubleOrNull()
+        val weight = binding.edtWeight.text.toString().toDoubleOrNull()
+        val age = binding.edtAge.text.toString().toIntOrNull()
 
-            if (heightStr.isEmpty() || weightStr.isEmpty() || ageStr.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val height = heightStr.toDouble()
-            val weight = weightStr.toDouble()
-            val age = ageStr.toInt()
-
-            // Lấy giới tính
-            val isMale = rgGender.checkedRadioButtonId == R.id.rbMale
-
-            // Lấy mục tiêu cơ thể từ ChipGroup
-            val selectedGoal = when (chipGroupGoal.checkedChipId) {
-                R.id.chipLose -> Goal.LOSE_WEIGHT
-                R.id.chipGain -> Goal.GAIN_WEIGHT
-                else -> Goal.MAINTAIN_WEIGHT
-            }
-
-            val selectedDiet = when (chipGroupDiet.checkedChipId) {
-                R.id.chipVegan -> DietType.VEGAN     // Chọn Thuần chay
-                else -> DietType.NORMAL             // Chọn Bình thường
-            }
-
-            // Đẩy toàn bộ dữ liệu thực tế sang ViewModel xử lý
-            viewModel.saveUserProfileAndCalculate(height, weight, age, isMale, selectedGoal, selectedDiet)
+        if (height == null || height !in 100.0..250.0) {
+            binding.edtHeight.error = getString(R.string.invalid_height)
+            return
+        }
+        if (weight == null || weight !in 30.0..350.0) {
+            binding.edtWeight.error = getString(R.string.invalid_weight)
+            return
+        }
+        if (age == null || age !in 13..100) {
+            binding.edtAge.error = getString(R.string.invalid_age)
+            return
         }
 
-        val btnSignOut = findViewById<Button>(R.id.btnSignOut)
-        btnSignOut.setOnClickListener {
-            authViewModel.signOut(this)
+        val goal = when (binding.chipGroupGoal.checkedChipId) {
+            R.id.chipLose -> Goal.LOSE_WEIGHT
+            R.id.chipGain -> Goal.GAIN_WEIGHT
+            else -> Goal.MAINTAIN_WEIGHT
+        }
+        val dietType = if (binding.chipGroupDiet.checkedChipId == R.id.chipVegan) {
+            DietType.VEGAN
+        } else {
+            DietType.NORMAL
+        }
+        val profile = UserProfile(
+            heightCm = height,
+            weightKg = weight,
+            age = age,
+            isMale = binding.rgGender.checkedRadioButtonId != R.id.rbFemale,
+            goal = goal,
+            dietType = dietType,
+            activityLevel = 1.2,
+        )
+        val calorieTarget = CalorieCalculator.calculateDailyCalorieTarget(profile)
+        binding.tvResult.text = getString(R.string.calorie_result, calorieTarget)
+
+        if (smokeTestMode) {
+            openMain()
+            return
         }
 
-        authViewModel.logoutResult.observe(this) { isSuccess ->
-            if (isSuccess) {
-                Toast.makeText(this, "Đã đăng xuất tài khoản", Toast.LENGTH_SHORT).show()
-                // Quay về màn hình đăng nhập
-                startActivity(Intent(this, LoginActivity::class.java))
-                finish()
+        sessionPreferences.saveProfile(profile, calorieTarget)
+        val user = firebaseAuth.currentUser ?: return
+        binding.btnCalculate.isEnabled = false
+        binding.btnCalculate.text = getString(R.string.saving_profile)
+        val data = mapOf(
+            "uid" to user.uid,
+            "name" to (user.displayName ?: ""),
+            "email" to (user.email ?: ""),
+            "heightCm" to height,
+            "weightKg" to weight,
+            "age" to age,
+            "isMale" to profile.isMale,
+            "goal" to goal.name,
+            "dietType" to dietType.name,
+            "activityLevel" to profile.activityLevel,
+            "dailyCalorieTarget" to calorieTarget,
+            "profileCompleted" to true,
+        )
+        firestore.collection("users").document(user.uid)
+            .set(data, SetOptions.merge())
+            .addOnSuccessListener { openMain() }
+            .addOnFailureListener {
+                Toast.makeText(this, R.string.profile_saved_locally, Toast.LENGTH_LONG).show()
+                openMain()
             }
+    }
+
+    private fun loadProfileFromFirestore() {
+        val user = firebaseAuth.currentUser ?: return
+        firestore.collection("users").document(user.uid).get()
+            .addOnSuccessListener { document ->
+                if (!document.exists()) return@addOnSuccessListener
+                val profile = UserProfile(
+                    heightCm = document.getDouble("heightCm") ?: return@addOnSuccessListener,
+                    weightKg = document.getDouble("weightKg") ?: return@addOnSuccessListener,
+                    age = document.getLong("age")?.toInt() ?: return@addOnSuccessListener,
+                    isMale = document.getBoolean("isMale") != false,
+                    goal = enumValueOrDefault(document.getString("goal"), Goal.MAINTAIN_WEIGHT),
+                    dietType = enumValueOrDefault(document.getString("dietType"), DietType.NORMAL),
+                    activityLevel = document.getDouble("activityLevel") ?: 1.2,
+                )
+                val target = document.getLong("dailyCalorieTarget")?.toInt()
+                    ?: CalorieCalculator.calculateDailyCalorieTarget(profile)
+                showProfile(profile)
+                binding.tvResult.text = getString(R.string.calorie_result, target)
+                if (document.getBoolean("profileCompleted") == true) {
+                    sessionPreferences.saveProfile(profile, target)
+                }
+            }
+    }
+
+    private fun showProfile(profile: UserProfile) {
+        binding.edtHeight.setText(profile.heightCm.toDisplayNumber())
+        binding.edtWeight.setText(profile.weightKg.toDisplayNumber())
+        binding.edtAge.setText(profile.age.toString())
+        binding.rgGender.check(if (profile.isMale) R.id.rbMale else R.id.rbFemale)
+        binding.chipGroupGoal.check(
+            when (profile.goal) {
+                Goal.LOSE_WEIGHT -> R.id.chipLose
+                Goal.GAIN_WEIGHT -> R.id.chipGain
+                Goal.MAINTAIN_WEIGHT -> R.id.chipMaintain
+            },
+        )
+        binding.chipGroupDiet.check(
+            if (profile.dietType == DietType.VEGAN) R.id.chipVegan else R.id.chipNormal,
+        )
+    }
+
+    private fun openMain() {
+        startActivity(Intent(this, MainActivity::class.java).apply {
+            putExtra(LoginActivity.EXTRA_SMOKE_TEST, smokeTestMode)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
+    }
+
+    private fun signOut() {
+        firebaseAuth.signOut()
+        sessionPreferences.clear()
+        lifecycleScope.launch {
+            runCatching {
+                CredentialManager.create(this@ProfileActivity)
+                    .clearCredentialState(ClearCredentialStateRequest())
+            }
+            openLogin()
         }
+    }
+
+    private fun openLogin() {
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
+    }
+
+    private inline fun <reified T : Enum<T>> enumValueOrDefault(value: String?, fallback: T): T {
+        return runCatching { enumValueOf<T>(value.orEmpty()) }.getOrDefault(fallback)
+    }
+
+    private fun Double.toDisplayNumber(): String {
+        return if (this % 1.0 == 0.0) toInt().toString() else toString()
     }
 }

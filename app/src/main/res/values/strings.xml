@@ -1,3 +1,21 @@
 <resources>
-    <string name="app_name">DailyMealRecomment</string>
+    <string name="app_name">FoodAI</string>
+    <string name="google_web_client_id">577908919305-23p4rm796p0pa237ak2d93ppufl50b6u.apps.googleusercontent.com</string>
+    <string name="invalid_google_credential">Thông tin đăng nhập Google không hợp lệ.</string>
+    <string name="google_sign_in_failed">Không thể đăng nhập bằng Google.</string>
+    <string name="google_console_setup_error">Chưa cấu hình đúng Google/Firebase cho ứng dụng. Hãy thêm SHA-1/SHA-256 vào Firebase, bật Google Sign-In rồi tải lại google-services.json.</string>
+    <string name="firebase_sign_in_failed">Firebase không thể xác thực tài khoản Google.</string>
+    <string name="checking_account">Đang kiểm tra tài khoản…</string>
+    <string name="invalid_height">Chiều cao phải từ 100 đến 250 cm.</string>
+    <string name="invalid_weight">Cân nặng phải từ 30 đến 350 kg.</string>
+    <string name="invalid_age">Tuổi phải từ 13 đến 100.</string>
+    <string name="calorie_result">%1$d kcal/ngày</string>
+    <string name="calories_consumed">Đã nạp: %1$d kcal</string>
+    <string name="calories_target">Mục tiêu: %1$d kcal</string>
+    <string name="saving_profile">Đang lưu…</string>
+    <string name="profile_saved_locally">Đã lưu hồ sơ trên thiết bị. Dữ liệu sẽ đồng bộ khi có mạng.</string>
+    <string name="camera_permission_required">Ứng dụng cần quyền Camera để chụp món ăn.</string>
+    <string name="camera_start_failed">Không thể khởi động Camera.</string>
+    <string name="photo_capture_failed">Không thể chụp ảnh. Vui lòng thử lại.</string>
+    <string name="food_items_ready">Đã xác nhận %1$d món ăn.</string>
 </resources>
