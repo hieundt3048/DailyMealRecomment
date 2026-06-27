@@ -30,6 +30,51 @@ class CalorieCalculatorTest {
     }
 
     @Test
+    fun maintainWeightGoalReturnsBaseDailyCalories() {
+        val target = CalorieCalculator.calculateDailyCalorieTarget(
+            baseProfile.copy(goal = Goal.MAINTAIN_WEIGHT),
+        )
+
+        assertEquals(1_911, target)
+    }
+
+    @Test
+    fun gainWeightGoalAddsCalories() {
+        val target = CalorieCalculator.calculateDailyCalorieTarget(
+            baseProfile.copy(goal = Goal.GAIN_WEIGHT),
+        )
+
+        assertEquals(2_411, target)
+    }
+
+    @Test
+    fun loseWeightGoalSubtractsCalories() {
+        val target = CalorieCalculator.calculateDailyCalorieTarget(
+            baseProfile.copy(goal = Goal.LOSE_WEIGHT),
+        )
+
+        assertEquals(1_411, target)
+    }
+
+    @Test
+    fun activityLevelChangesDailyCalories() {
+        val sedentary = CalorieCalculator.calculateDailyCalorieTarget(
+            baseProfile.copy(activityLevel = 1.2),
+        )
+        val moderate = CalorieCalculator.calculateDailyCalorieTarget(
+            baseProfile.copy(activityLevel = 1.55),
+        )
+        val active = CalorieCalculator.calculateDailyCalorieTarget(
+            baseProfile.copy(activityLevel = 1.725),
+        )
+
+        assertTrue(moderate > sedentary)
+        assertTrue(active > moderate)
+        assertEquals(2_468, moderate)
+        assertEquals(2_747, active)
+    }
+
+    @Test
     fun targetNeverDropsBelowMinimum() {
         val target = CalorieCalculator.calculateDailyCalorieTarget(
             baseProfile.copy(weightKg = 30.0, age = 100, isMale = false, goal = Goal.LOSE_WEIGHT),

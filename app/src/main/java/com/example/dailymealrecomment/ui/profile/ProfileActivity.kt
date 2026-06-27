@@ -2,12 +2,14 @@ package com.example.dailymealrecomment.ui.profile
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.lifecycleScope
 import com.example.dailymealrecomment.BuildConfig
+import com.example.dailymealrecomment.CameraActivity
 import com.example.dailymealrecomment.LoginActivity
 import com.example.dailymealrecomment.MainActivity
 import com.example.dailymealrecomment.R
@@ -27,6 +29,7 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var sessionPreferences: SessionPreferences
     private val firebaseAuth by lazy { FirebaseAuth.getInstance() }
     private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private var hasCompletedProfile = false
 
     private val smokeTestMode: Boolean
         get() = BuildConfig.DEBUG && intent.getBooleanExtra(LoginActivity.EXTRA_SMOKE_TEST, false)
@@ -42,54 +45,74 @@ class ProfileActivity : AppCompatActivity() {
             return
         }
 
+        setupBottomNavigation()
+        hasCompletedProfile = sessionPreferences.isProfileCompleted || smokeTestMode
+        updateCompletedProfileUi()
+
         sessionPreferences.cachedProfile()?.let(::showProfile)
         if (!smokeTestMode) loadProfileFromFirestore()
         binding.btnCalculate.setOnClickListener { saveProfileAndContinue() }
         binding.btnSignOut.setOnClickListener { signOut() }
     }
 
+    private fun setupBottomNavigation() {
+        binding.bottomNavigation.selectedItemId = R.id.nav_profile
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    openMain(MainActivity.PAGE_HOME, clearTask = false)
+                    false
+                }
+                R.id.nav_diary -> {
+                    openMain(MainActivity.PAGE_DIARY, clearTask = false)
+                    false
+                }
+                R.id.nav_scan -> {
+                    startActivity(Intent(this, CameraActivity::class.java))
+                    false
+                }
+                R.id.nav_suggestions -> {
+                    openMain(MainActivity.PAGE_SUGGESTIONS, clearTask = false)
+                    false
+                }
+                R.id.nav_profile -> true
+                else -> false
+            }
+        }
+    }
+
     private fun saveProfileAndContinue() {
-        val height = binding.edtHeight.text.toString().toDoubleOrNull()
-        val weight = binding.edtWeight.text.toString().toDoubleOrNull()
-        val age = binding.edtAge.text.toString().toIntOrNull()
+        clearFormErrors()
+        val validation = ProfileFormValidator.validate(
+            heightText = binding.edtHeight.text.toString(),
+            weightText = binding.edtWeight.text.toString(),
+            ageText = binding.edtAge.text.toString(),
+        )
+        if (validation is ProfileValidationResult.Invalid) {
+            showValidationError(validation.field)
+            return
+        }
+        val validInput = validation as ProfileValidationResult.Valid
 
-        if (height == null || height !in 100.0..250.0) {
-            binding.edtHeight.error = getString(R.string.invalid_height)
-            return
-        }
-        if (weight == null || weight !in 30.0..350.0) {
-            binding.edtWeight.error = getString(R.string.invalid_weight)
-            return
-        }
-        if (age == null || age !in 13..100) {
-            binding.edtAge.error = getString(R.string.invalid_age)
-            return
-        }
-
-        val goal = when (binding.chipGroupGoal.checkedChipId) {
-            R.id.chipLose -> Goal.LOSE_WEIGHT
-            R.id.chipGain -> Goal.GAIN_WEIGHT
-            else -> Goal.MAINTAIN_WEIGHT
-        }
-        val dietType = if (binding.chipGroupDiet.checkedChipId == R.id.chipVegan) {
-            DietType.VEGAN
-        } else {
-            DietType.NORMAL
-        }
+        val goal = ProfileGoalMapper.goalFromCheckedChip(binding.chipGroupGoal.checkedChipId)
+        val dietType = ProfileDietMapper.dietTypeFromCheckedChip(binding.chipGroupDiet.checkedChipId)
+        val activityLevel = ProfileActivityLevelMapper.activityLevelFromCheckedChip(
+            binding.chipGroupActivity.checkedChipId,
+        )
         val profile = UserProfile(
-            heightCm = height,
-            weightKg = weight,
-            age = age,
+            heightCm = validInput.heightCm,
+            weightKg = validInput.weightKg,
+            age = validInput.age,
             isMale = binding.rgGender.checkedRadioButtonId != R.id.rbFemale,
             goal = goal,
             dietType = dietType,
-            activityLevel = 1.2,
+            activityLevel = activityLevel,
         )
         val calorieTarget = CalorieCalculator.calculateDailyCalorieTarget(profile)
         binding.tvResult.text = getString(R.string.calorie_result, calorieTarget)
 
         if (smokeTestMode) {
-            openMain()
+            openMain(clearTask = true)
             return
         }
 
@@ -101,9 +124,9 @@ class ProfileActivity : AppCompatActivity() {
             "uid" to user.uid,
             "name" to (user.displayName ?: ""),
             "email" to (user.email ?: ""),
-            "heightCm" to height,
-            "weightKg" to weight,
-            "age" to age,
+            "heightCm" to profile.heightCm,
+            "weightKg" to profile.weightKg,
+            "age" to profile.age,
             "isMale" to profile.isMale,
             "goal" to goal.name,
             "dietType" to dietType.name,
@@ -113,10 +136,10 @@ class ProfileActivity : AppCompatActivity() {
         )
         firestore.collection("users").document(user.uid)
             .set(data, SetOptions.merge())
-            .addOnSuccessListener { openMain() }
+            .addOnSuccessListener { openMain(clearTask = true) }
             .addOnFailureListener {
                 Toast.makeText(this, R.string.profile_saved_locally, Toast.LENGTH_LONG).show()
-                openMain()
+                openMain(clearTask = true)
             }
     }
 
@@ -140,6 +163,8 @@ class ProfileActivity : AppCompatActivity() {
                 binding.tvResult.text = getString(R.string.calorie_result, target)
                 if (document.getBoolean("profileCompleted") == true) {
                     sessionPreferences.saveProfile(profile, target)
+                    hasCompletedProfile = true
+                    updateCompletedProfileUi()
                 }
             }
     }
@@ -149,24 +174,57 @@ class ProfileActivity : AppCompatActivity() {
         binding.edtWeight.setText(profile.weightKg.toDisplayNumber())
         binding.edtAge.setText(profile.age.toString())
         binding.rgGender.check(if (profile.isMale) R.id.rbMale else R.id.rbFemale)
-        binding.chipGroupGoal.check(
-            when (profile.goal) {
-                Goal.LOSE_WEIGHT -> R.id.chipLose
-                Goal.GAIN_WEIGHT -> R.id.chipGain
-                Goal.MAINTAIN_WEIGHT -> R.id.chipMaintain
-            },
-        )
-        binding.chipGroupDiet.check(
-            if (profile.dietType == DietType.VEGAN) R.id.chipVegan else R.id.chipNormal,
+        binding.chipGroupGoal.check(ProfileGoalMapper.chipIdForGoal(profile.goal))
+        binding.chipGroupDiet.check(ProfileDietMapper.chipIdForDietType(profile.dietType))
+        binding.chipGroupActivity.check(
+            ProfileActivityLevelMapper.chipIdForActivityLevel(profile.activityLevel),
         )
     }
 
-    private fun openMain() {
+    private fun openMain(
+        startPage: String = MainActivity.PAGE_HOME,
+        clearTask: Boolean,
+    ) {
         startActivity(Intent(this, MainActivity::class.java).apply {
             putExtra(LoginActivity.EXTRA_SMOKE_TEST, smokeTestMode)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(MainActivity.EXTRA_START_PAGE, startPage)
+            flags = if (clearTask) {
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            } else {
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
         })
-        finish()
+        if (clearTask) finish()
+    }
+
+    private fun updateCompletedProfileUi() {
+        binding.bottomNavigation.visibility = if (hasCompletedProfile) View.VISIBLE else View.GONE
+        binding.btnCalculate.setText(
+            if (hasCompletedProfile) R.string.profile_update else R.string.profile_save_continue,
+        )
+    }
+
+    private fun clearFormErrors() {
+        binding.edtHeight.error = null
+        binding.edtWeight.error = null
+        binding.edtAge.error = null
+    }
+
+    private fun showValidationError(field: ProfileField) {
+        when (field) {
+            ProfileField.HEIGHT -> {
+                binding.edtHeight.error = getString(R.string.invalid_height)
+                binding.edtHeight.requestFocus()
+            }
+            ProfileField.WEIGHT -> {
+                binding.edtWeight.error = getString(R.string.invalid_weight)
+                binding.edtWeight.requestFocus()
+            }
+            ProfileField.AGE -> {
+                binding.edtAge.error = getString(R.string.invalid_age)
+                binding.edtAge.requestFocus()
+            }
+        }
     }
 
     private fun signOut() {
