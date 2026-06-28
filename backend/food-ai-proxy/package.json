@@ -1,0 +1,14 @@
+{
+  "name": "food-ai-nvidia-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small proxy backend for DailyMealRecomment to call NVIDIA AI without exposing API keys in Android.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

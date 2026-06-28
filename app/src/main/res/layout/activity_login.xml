@@ -26,33 +26,17 @@
         android:layout_height="match_parent"
         android:paddingHorizontal="24dp">
 
-        <TextView
-            android:id="@+id/tvBrandMark"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:background="@drawable/bg_foodai_circle"
-            android:gravity="center"
-            android:text="AI"
-            android:textColor="@color/white"
-            android:textSize="25sp"
-            android:textStyle="bold"
+        <ImageView
+            android:id="@+id/ivBrandLogo"
+            android:layout_width="210dp"
+            android:layout_height="210dp"
+            android:contentDescription="@string/app_name"
+            android:scaleType="fitCenter"
+            android:src="@drawable/foodai_logo"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginTop="72dp" />
-
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="FoodAI"
-            android:textColor="@color/white"
-            android:textSize="38sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvBrandMark" />
+            android:layout_marginTop="44dp" />
 
         <TextView
             android:id="@+id/tvSubtitle"
@@ -66,7 +50,7 @@
             android:lineSpacingExtra="3dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvTitle" />
+            app:layout_constraintTop_toBottomOf="@id/ivBrandLogo" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/loginCard"

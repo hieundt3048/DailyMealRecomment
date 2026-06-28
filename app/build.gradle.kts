@@ -1,7 +1,24 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
 }
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use(localProperties::load)
+}
+
+fun String.asBuildConfigString(): String =
+    "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+val foodAiEndpoint: String = localProperties.getProperty("FOOD_AI_ENDPOINT")
+    ?: providers.gradleProperty("FOOD_AI_ENDPOINT").orNull.orEmpty()
+val foodAiTimeoutMs: Long = localProperties.getProperty("FOOD_AI_TIMEOUT_MS")?.toLongOrNull()
+    ?: providers.gradleProperty("FOOD_AI_TIMEOUT_MS").orNull?.toLongOrNull()
+    ?: 15_000L
 
 android {
     namespace = "com.example.dailymealrecomment"
@@ -18,11 +35,17 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "FOOD_AI_ENDPOINT", foodAiEndpoint.asBuildConfigString())
+        buildConfigField("long", "FOOD_AI_TIMEOUT_MS", "${foodAiTimeoutMs}L")
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
         release {
             isMinifyEnabled = false
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

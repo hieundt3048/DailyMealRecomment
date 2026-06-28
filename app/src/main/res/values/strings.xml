@@ -52,4 +52,21 @@
     <string name="suggestions_status_normal">Đang hiển thị cả món bình thường và món thuần chay.</string>
     <string name="suggestions_status_vegan">Đang lọc theo chế độ thuần chay.</string>
     <string name="analysis_error_message">Có lỗi khi phân tích ảnh. Vui lòng kiểm tra mạng hoặc thử ảnh khác.</string>
+    <string name="analysis_missing_image">Chưa có ảnh để gửi sang AI. Vui lòng chụp hoặc chọn ảnh món ăn trước.</string>
+    <string name="analysis_api_not_configured">Chưa cấu hình endpoint AI. Hãy thêm FOOD_AI_ENDPOINT vào local.properties hoặc Gradle properties; không nhúng API key trực tiếp trong app.</string>
+    <string name="analysis_image_read_failed">Không đọc được ảnh đã chọn. Vui lòng chọn ảnh khác hoặc chụp lại.</string>
+    <string name="analysis_timeout">AI phản hồi quá lâu. Vui lòng kiểm tra mạng và thử lại.</string>
+    <string name="analysis_network_error">Không kết nối được dịch vụ AI. Vui lòng kiểm tra mạng hoặc endpoint AI.</string>
+    <string name="analysis_server_error">Dịch vụ AI trả lỗi. Vui lòng thử lại sau hoặc kiểm tra backend AI.</string>
+    <string name="analysis_invalid_response">Dịch vụ AI trả dữ liệu không đúng định dạng. App cần tên món, khối lượng gram và calo.</string>
+    <string name="food_weight_error_not_number">Nhập khối lượng hợp lệ.</string>
+    <string name="food_weight_error_too_small">Khối lượng phải lớn hơn 0 g.</string>
+    <string name="food_weight_error_too_large">Khối lượng tối đa %1$d g.</string>
+    <string name="food_weight_error_missing_ratio">Chưa có tỉ lệ calo/gram để tự tính lại.</string>
+    <string name="food_calorie_error_not_number">Nhập lượng calo hợp lệ.</string>
+    <string name="food_calorie_error_too_small">Calo phải lớn hơn 0.</string>
+    <string name="food_calorie_error_too_large">Calo tối đa %1$d kcal.</string>
+    <string name="food_name_error_empty">Tên món ăn không được để trống.</string>
+    <string name="food_name_error_too_long">Tên món ăn tối đa %1$d ký tự.</string>
+    <string name="food_name_save_invalid">Vui lòng kiểm tra lại tên món ăn trước khi lưu.</string>
 </resources>

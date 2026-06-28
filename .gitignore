@@ -16,3 +16,4 @@
 local.properties
 google-services.json
 PROJECT_PROGRESS_CHECKLIST.md
+backend/food-ai-proxy/.env
