@@ -10,6 +10,7 @@ import androidx.test.espresso.Espresso.closeSoftKeyboard
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.replaceText
+import androidx.test.espresso.action.ViewActions.scrollTo
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.intent.Intents.intended
 import androidx.test.espresso.intent.Intents.intending
@@ -37,7 +38,7 @@ class AppFlowSmokeTest {
             .putExtra(LoginActivity.EXTRA_SMOKE_TEST, true)
 
         ActivityScenario.launch<LoginActivity>(intent).use {
-            onView(withId(R.id.btnGoogleSignIn)).perform(click())
+            onView(withId(R.id.btnAuthPrimary)).perform(click())
             onView(withId(R.id.edtHeight)).perform(replaceText("170"))
             onView(withId(R.id.edtWeight)).perform(replaceText("65"))
             onView(withId(R.id.edtAge)).perform(replaceText("25"))
@@ -76,11 +77,32 @@ class AppFlowSmokeTest {
             .respondWith(ActivityResult(Activity.RESULT_CANCELED, null))
 
         ActivityScenario.launch<MainActivity>(intent).use {
+            onView(withId(R.id.rvHomeMealSuggestions)).perform(scrollTo()).check(matches(isDisplayed()))
             onView(withId(R.id.btnCamera)).perform(click())
             intended(hasComponent(CameraActivity::class.java.name))
             onView(withId(R.id.btnGallery)).perform(click())
             intended(hasAction(Intent.ACTION_OPEN_DOCUMENT))
             onView(withId(R.id.tvGalleryStatus)).check(matches(withText(R.string.gallery_picker_cancelled)))
+            onView(withId(R.id.nav_suggestions)).perform(click())
+            onView(withId(R.id.tvSuggestionRemainingStatus)).check(matches(isDisplayed()))
+            onView(withId(R.id.rvSuggestionMeals)).check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun diaryPageShowsMealLogDateControlsAndEmptyState() {
+        val intent = Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java)
+            .putExtra(LoginActivity.EXTRA_SMOKE_TEST, true)
+
+        ActivityScenario.launch<MainActivity>(intent).use {
+            onView(withId(R.id.nav_diary)).perform(click())
+            onView(withId(R.id.tvDiaryDate)).check(matches(isDisplayed()))
+            onView(withId(R.id.tvDiarySummary)).check(matches(isDisplayed()))
+            onView(withId(R.id.rvTodayLog)).check(matches(isDisplayed()))
+
+            onView(withId(R.id.btnPreviousDiaryDate)).perform(click())
+            onView(withId(R.id.diaryEmptyState)).check(matches(isDisplayed()))
+            onView(withId(R.id.btnDiaryAddMeal)).check(matches(isDisplayed()))
         }
     }
 
@@ -125,6 +147,8 @@ class AppFlowSmokeTest {
             onView(withId(R.id.etFoodName)).check(matches(isDisplayed()))
             onView(withId(R.id.etWeight)).check(matches(isDisplayed()))
             onView(withId(R.id.etCalories)).check(matches(isDisplayed()))
+            onView(withId(R.id.mealChipGroup)).check(matches(isDisplayed()))
+            onView(withId(R.id.chipLunch)).check(matches(isDisplayed()))
             onView(withId(R.id.btnSave)).check(matches(isDisplayed()))
         }
     }

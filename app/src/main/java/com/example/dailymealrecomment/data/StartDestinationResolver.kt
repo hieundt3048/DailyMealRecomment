@@ -7,8 +7,8 @@ enum class StartDestination {
 }
 
 object StartDestinationResolver {
-    fun resolve(hasFirebaseUser: Boolean, isProfileCompleted: Boolean): StartDestination {
-        if (!hasFirebaseUser) return StartDestination.LOGIN
+    fun resolve(hasAuthenticatedSession: Boolean, isProfileCompleted: Boolean): StartDestination {
+        if (!hasAuthenticatedSession) return StartDestination.LOGIN
         return if (isProfileCompleted) StartDestination.MAIN else StartDestination.PROFILE_LOOKUP
     }
 }

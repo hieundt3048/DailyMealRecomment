@@ -1,5 +1,6 @@
 package com.example.dailymealrecomment
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -7,11 +8,16 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.dailymealrecomment.data.SessionPreferences
 import com.example.dailymealrecomment.data.ai.FoodRecognitionFailureReason
 import com.example.dailymealrecomment.data.ai.FoodRecognitionRepository
 import com.example.dailymealrecomment.data.ai.FoodRecognitionResult
+import com.example.dailymealrecomment.data.diary.MealLogRepository
+import com.example.dailymealrecomment.data.diary.MealType
+import com.example.dailymealrecomment.data.xampp.XamppRepository
 import com.example.dailymealrecomment.databinding.ActivityFoodAnalysisBinding
 import com.example.dailymealrecomment.model.FoodItem
+import com.example.dailymealrecomment.utilities.FoodCalorieAdjuster
 import com.example.dailymealrecomment.utilities.FoodNameValidationResult
 import com.example.dailymealrecomment.utilities.FoodNameValidator
 import kotlinx.coroutines.launch
@@ -19,6 +25,7 @@ import kotlinx.coroutines.launch
 class FoodAnalysisActivity : AppCompatActivity() {
     private lateinit var binding: ActivityFoodAnalysisBinding
     private lateinit var adapter: FoodResultAdapter
+    private lateinit var sessionPreferences: SessionPreferences
     private val foodItems = mutableListOf<FoodItem>()
     private val imageUri: Uri? by lazy {
         intent.getStringExtra(EXTRA_IMAGE_URI)?.let(Uri::parse)
@@ -30,11 +37,15 @@ class FoodAnalysisActivity : AppCompatActivity() {
             timeoutMillis = BuildConfig.FOOD_AI_TIMEOUT_MS,
         )
     }
+    private val mealLogRepository by lazy {
+        MealLogRepository(XamppRepository())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityFoodAnalysisBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        sessionPreferences = SessionPreferences(this)
 
         imageUri?.let(binding.imgFood::setImageURI)
 
@@ -81,11 +92,22 @@ class FoodAnalysisActivity : AppCompatActivity() {
         listOf(FoodItem("Món ăn nhận diện", 100, 200))
 
     private fun confirmFoodItems() {
+        val token = sessionPreferences.authToken
+        if (token.isNullOrBlank()) {
+            Toast.makeText(this, R.string.analysis_save_login_required, Toast.LENGTH_LONG).show()
+            return
+        }
+
         val normalizedItems = mutableListOf<FoodItem>()
 
         for (foodItem in foodItems) {
             when (val result = FoodNameValidator.validate(foodItem.name)) {
                 is FoodNameValidationResult.Valid -> {
+                    if (!foodItem.hasSaveableCalories()) {
+                        Toast.makeText(this, R.string.analysis_save_invalid_food, Toast.LENGTH_SHORT).show()
+                        adapter.notifyDataSetChanged()
+                        return
+                    }
                     foodItem.name = result.normalizedName
                     normalizedItems.add(foodItem)
                 }
@@ -100,7 +122,56 @@ class FoodAnalysisActivity : AppCompatActivity() {
         foodItems.clear()
         foodItems.addAll(normalizedItems)
         adapter.notifyDataSetChanged()
-        Toast.makeText(this, getString(R.string.food_items_ready, foodItems.size), Toast.LENGTH_SHORT).show()
+        setSaveInProgress(true)
+        lifecycleScope.launch {
+            runCatching {
+                mealLogRepository.saveMealItems(
+                    token = token,
+                    items = foodItems,
+                    mealType = selectedMealType(),
+                    sourceImageUri = imageUri?.toString(),
+                )
+            }.onSuccess {
+                setSaveInProgress(false)
+                Toast.makeText(this@FoodAnalysisActivity, getString(R.string.food_items_saved, foodItems.size), Toast.LENGTH_SHORT).show()
+                openDiary()
+            }.onFailure {
+                setSaveInProgress(false)
+                Toast.makeText(this@FoodAnalysisActivity, R.string.food_items_save_failed, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun FoodItem.hasSaveableCalories(): Boolean =
+        weight in FoodCalorieAdjuster.MIN_WEIGHT_GRAMS..FoodCalorieAdjuster.MAX_WEIGHT_GRAMS &&
+            calories in FoodCalorieAdjuster.MIN_CALORIES..FoodCalorieAdjuster.MAX_CALORIES
+
+    private fun selectedMealType(): MealType {
+        return when (binding.mealChipGroup.checkedChipId) {
+            R.id.chipBreakfast -> MealType.BREAKFAST
+            R.id.chipDinner -> MealType.DINNER
+            R.id.chipSnack -> MealType.SNACK
+            else -> MealType.LUNCH
+        }
+    }
+
+    private fun setSaveInProgress(isSaving: Boolean) {
+        binding.btnSave.isEnabled = !isSaving && foodItems.isNotEmpty()
+        binding.btnSave.text = getString(
+            if (isSaving) R.string.food_items_saving else R.string.food_items_save_to_diary,
+        )
+        binding.mealChipGroup.isEnabled = !isSaving
+        binding.chipBreakfast.isEnabled = !isSaving
+        binding.chipLunch.isEnabled = !isSaving
+        binding.chipDinner.isEnabled = !isSaving
+        binding.chipSnack.isEnabled = !isSaving
+    }
+
+    private fun openDiary() {
+        startActivity(Intent(this, MainActivity::class.java).apply {
+            putExtra(MainActivity.EXTRA_START_PAGE, MainActivity.PAGE_DIARY)
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        })
         finish()
     }
 

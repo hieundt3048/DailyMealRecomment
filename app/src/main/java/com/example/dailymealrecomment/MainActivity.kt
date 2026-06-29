@@ -9,46 +9,45 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.credentials.ClearCredentialStateRequest
-import androidx.credentials.CredentialManager
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.dailymealrecomment.data.SessionPreferences
+import com.example.dailymealrecomment.data.dashboard.DashboardProgressCalculator
+import com.example.dailymealrecomment.data.diary.DiaryLogGrouper
+import com.example.dailymealrecomment.data.diary.MealLogEntry
+import com.example.dailymealrecomment.data.diary.MealLogEntryFactory
+import com.example.dailymealrecomment.data.diary.MealLogRepository
+import com.example.dailymealrecomment.data.diary.MealType
 import com.example.dailymealrecomment.data.model.DietType
 import com.example.dailymealrecomment.data.model.MealSuggestion
+import com.example.dailymealrecomment.data.model.MealSuggestionCatalog
+import com.example.dailymealrecomment.data.xampp.XamppRepository
 import com.example.dailymealrecomment.databinding.ActivityMainBinding
-import com.example.dailymealrecomment.model.FoodItem
 import com.example.dailymealrecomment.ui.profile.ProfileActivity
-import com.example.dailymealrecomment.utilities.DietSuggestionFilter
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.dailymealrecomment.utilities.MealSuggestionRecommender
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var sessionPreferences: SessionPreferences
-    private val firebaseAuth by lazy { FirebaseAuth.getInstance() }
-    private val firestore by lazy { FirebaseFirestore.getInstance() }
-    private val loggedItems = mutableListOf(
-        FoodItem("Sữa chua", 150, 150),
-        FoodItem("Hạt hạnh nhân", 30, 170),
-    )
-    private val mealSuggestions = listOf(
-        MealSuggestion(
-            id = SUGGESTION_CHICKEN_RICE,
-            name = "Cơm gà áp chảo",
-            calories = 520,
-            isVegan = false,
-        ),
-        MealSuggestion(
-            id = SUGGESTION_TOFU_SALAD,
-            name = "Salad đậu phụ",
-            calories = 430,
-            isVegan = true,
-        ),
-    )
+    private lateinit var foodLogAdapter: FoodLogAdapter
+    private lateinit var homeMealSuggestionAdapter: MealSuggestionAdapter
+    private lateinit var suggestionAdapter: MealSuggestionAdapter
+    private val xamppRepository by lazy { XamppRepository() }
+    private val mealLogRepository by lazy { MealLogRepository(xamppRepository) }
+    private var selectedDiaryDayMillis: Long = startOfDay(System.currentTimeMillis())
+    private var diaryEntries: List<MealLogEntry> = emptyList()
+    private var dashboardTargetCalories: Int = 0
+    private var shouldRefreshDashboardOnResume: Boolean = false
+    private val mealSuggestions = MealSuggestionCatalog.all
     private val smokeTestMode: Boolean
         get() = BuildConfig.DEBUG && intent.getBooleanExtra(LoginActivity.EXTRA_SMOKE_TEST, false)
+    private val selectedDiaryDateKey: String
+        get() = MealLogEntryFactory.dateKey(selectedDiaryDayMillis)
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
@@ -83,20 +82,36 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         sessionPreferences = SessionPreferences(this)
 
-        if (firebaseAuth.currentUser == null && !smokeTestMode) {
+        if (!sessionPreferences.isLoggedIn && !smokeTestMode) {
             sessionPreferences.clear()
             openLogin()
             return
         }
 
+        foodLogAdapter = FoodLogAdapter()
         binding.rvTodayLog.layoutManager = LinearLayoutManager(this)
-        binding.rvTodayLog.adapter = FoodLogAdapter(loggedItems)
-        binding.toolbar.subtitle = firebaseAuth.currentUser?.displayName
+        binding.rvTodayLog.adapter = foodLogAdapter
+        homeMealSuggestionAdapter = MealSuggestionAdapter(::openMealSuggestionDetail)
+        binding.rvHomeMealSuggestions.layoutManager = LinearLayoutManager(this)
+        binding.rvHomeMealSuggestions.adapter = homeMealSuggestionAdapter
+        binding.rvHomeMealSuggestions.isNestedScrollingEnabled = false
+        suggestionAdapter = MealSuggestionAdapter(::openMealSuggestionDetail)
+        binding.rvSuggestionMeals.layoutManager = LinearLayoutManager(this)
+        binding.rvSuggestionMeals.adapter = suggestionAdapter
+        binding.rvSuggestionMeals.isNestedScrollingEnabled = false
+        binding.toolbar.subtitle = sessionPreferences.userName ?: sessionPreferences.userEmail
         setupToolbar()
         setupImageActions()
+        setupDiaryActions()
         setupBottomNavigation()
-        updateDashboard(if (smokeTestMode) 2_000 else sessionPreferences.dailyCalorieTarget)
+        dashboardTargetCalories = if (smokeTestMode) {
+            SMOKE_TEST_TARGET_CALORIES
+        } else {
+            sessionPreferences.dailyCalorieTarget
+        }
+        updateDashboard()
         updateSuggestionCards()
+        loadDiaryForSelectedDate()
         if (!smokeTestMode) loadCalorieTarget()
         selectStartPage(intent.getStringExtra(EXTRA_START_PAGE))
     }
@@ -105,6 +120,20 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         selectStartPage(intent.getStringExtra(EXTRA_START_PAGE))
+        if (intent.getStringExtra(EXTRA_START_PAGE) == PAGE_DIARY) {
+            loadDiaryForSelectedDate()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!::sessionPreferences.isInitialized || smokeTestMode) return
+        if (!shouldRefreshDashboardOnResume) {
+            shouldRefreshDashboardOnResume = true
+            return
+        }
+
+        refreshDashboardSnapshot()
     }
 
     private fun setupToolbar() {
@@ -124,6 +153,18 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnGallery.setOnClickListener {
             openGalleryPicker()
+        }
+    }
+
+    private fun setupDiaryActions() {
+        binding.btnPreviousDiaryDate.setOnClickListener {
+            moveDiaryDate(days = -1)
+        }
+        binding.btnNextDiaryDate.setOnClickListener {
+            moveDiaryDate(days = 1)
+        }
+        binding.btnDiaryAddMeal.setOnClickListener {
+            startActivity(Intent(this, CameraActivity::class.java))
         }
     }
 
@@ -196,6 +237,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showDiaryPage() {
+        updateDiaryDateHeader()
         binding.pageHome.visibility = View.GONE
         binding.pageDiary.visibility = View.VISIBLE
         binding.pageSuggestions.visibility = View.GONE
@@ -212,20 +254,26 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateSuggestionCards() {
         val dietType = sessionPreferences.cachedProfile()?.dietType ?: DietType.NORMAL
-        val visibleSuggestionIds = DietSuggestionFilter.filterForDiet(mealSuggestions, dietType)
-            .map { it.id }
-            .toSet()
+        val remainingCalories = DashboardProgressCalculator.calculate(
+            diaryEntries,
+            dashboardTargetCalories,
+        ).remainingCalories
+        val recommendedSuggestions = MealSuggestionRecommender.recommend(
+            suggestions = mealSuggestions,
+            dietType = dietType,
+            remainingCalories = remainingCalories,
+        )
 
-        binding.cardChickenSuggestion.visibility = if (SUGGESTION_CHICKEN_RICE in visibleSuggestionIds) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
-        binding.cardTofuSuggestion.visibility = if (SUGGESTION_TOFU_SALAD in visibleSuggestionIds) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
+        homeMealSuggestionAdapter.submitList(recommendedSuggestions, remainingCalories)
+        suggestionAdapter.submitList(recommendedSuggestions, remainingCalories)
+        binding.tvSuggestionRemainingStatus.text = getString(
+            if (recommendedSuggestions.isEmpty()) {
+                R.string.suggestions_remaining_status_empty
+            } else {
+                R.string.suggestions_remaining_status
+            },
+            remainingCalories,
+        )
         binding.tvSuggestionDietStatus.text = if (dietType == DietType.VEGAN) {
             getString(R.string.suggestions_status_vegan)
         } else {
@@ -234,27 +282,161 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadCalorieTarget() {
-        val user = firebaseAuth.currentUser ?: return
-        firestore.collection("users").document(user.uid).get()
-            .addOnSuccessListener { document ->
-                val target = document.getLong("dailyCalorieTarget")?.toInt()
-                    ?: sessionPreferences.dailyCalorieTarget
-                updateDashboard(target)
-            }
-            .addOnFailureListener { updateDashboard(sessionPreferences.dailyCalorieTarget) }
+        val token = sessionPreferences.authToken ?: return
+        lifecycleScope.launch {
+            runCatching { xamppRepository.fetchProfile(token) }
+                .onSuccess { profile ->
+                    if (profile != null) {
+                        sessionPreferences.saveProfile(profile.profile, profile.dailyCalorieTarget)
+                        dashboardTargetCalories = profile.dailyCalorieTarget
+                    } else {
+                        dashboardTargetCalories = sessionPreferences.dailyCalorieTarget
+                    }
+                    updateDashboard()
+                    updateSuggestionCards()
+                }
+                .onFailure {
+                    dashboardTargetCalories = sessionPreferences.dailyCalorieTarget
+                    updateDashboard()
+                    updateSuggestionCards()
+                }
+        }
     }
 
-    private fun updateDashboard(targetCalories: Int) {
-        val consumedCalories = loggedItems.sumOf { it.calories }
-        val remainingCalories = (targetCalories - consumedCalories).coerceAtLeast(0)
-        binding.tvCaloriesConsumed.text = getString(R.string.calories_consumed, consumedCalories)
-        binding.tvCaloriesTarget.text = getString(R.string.calories_target, targetCalories)
-        binding.tvCaloriesRemaining.text = remainingCalories.toString()
-        binding.progressCalories.progress = if (targetCalories > 0) {
-            ((consumedCalories * 100.0) / targetCalories).toInt().coerceIn(0, 100)
-        } else {
-            0
+    private fun refreshDashboardSnapshot() {
+        dashboardTargetCalories = sessionPreferences.dailyCalorieTarget
+        updateDashboard()
+        loadCalorieTarget()
+        loadDiaryForSelectedDate()
+    }
+
+    private fun loadDiaryForSelectedDate() {
+        updateDiaryDateHeader()
+
+        if (smokeTestMode) {
+            showDiaryEntries(smokeDiaryEntriesForSelectedDate())
+            return
         }
+
+        val token = sessionPreferences.authToken
+        if (token.isNullOrBlank()) {
+            openLogin()
+            return
+        }
+
+        showDiaryLoading()
+        lifecycleScope.launch {
+            runCatching {
+                mealLogRepository.loadMealItemsForDate(
+                    token = token,
+                    dateKey = selectedDiaryDateKey,
+                )
+            }.onSuccess(::showDiaryEntries)
+                .onFailure { showDiaryError() }
+        }
+    }
+
+    private fun showDiaryLoading() {
+        diaryEntries = emptyList()
+        foodLogAdapter.submitSections(emptyList())
+        binding.tvDiarySummary.setText(R.string.diary_summary_loading)
+        binding.diaryStatus.setText(R.string.diary_loading)
+        binding.diaryStatus.visibility = View.VISIBLE
+        binding.diaryEmptyState.visibility = View.GONE
+        binding.rvTodayLog.visibility = View.GONE
+        updateDashboard()
+        updateSuggestionCards()
+    }
+
+    private fun showDiaryEntries(entries: List<MealLogEntry>) {
+        diaryEntries = DiaryLogGrouper.sortEntries(entries)
+        val sections = DiaryLogGrouper.sectionsFor(diaryEntries)
+        val totalCalories = DiaryLogGrouper.totalCalories(diaryEntries)
+        foodLogAdapter.submitSections(sections)
+
+        binding.tvDiarySummary.text = getString(
+            R.string.diary_summary,
+            diaryEntries.size,
+            totalCalories,
+        )
+        binding.diaryStatus.visibility = View.GONE
+        binding.diaryEmptyState.visibility = if (diaryEntries.isEmpty()) View.VISIBLE else View.GONE
+        binding.rvTodayLog.visibility = if (diaryEntries.isEmpty()) View.GONE else View.VISIBLE
+        updateDashboard()
+        updateSuggestionCards()
+    }
+
+    private fun showDiaryError() {
+        diaryEntries = emptyList()
+        foodLogAdapter.submitSections(emptyList())
+        binding.tvDiarySummary.setText(R.string.diary_summary_load_failed)
+        binding.diaryStatus.setText(R.string.diary_load_failed)
+        binding.diaryStatus.visibility = View.VISIBLE
+        binding.diaryEmptyState.visibility = View.GONE
+        binding.rvTodayLog.visibility = View.GONE
+        updateDashboard()
+        updateSuggestionCards()
+    }
+
+    private fun updateDashboard() {
+        val progress = DashboardProgressCalculator.calculate(diaryEntries, dashboardTargetCalories)
+        binding.tvCaloriesConsumed.text = getString(R.string.calories_consumed, progress.consumedCalories)
+        binding.tvCaloriesTarget.text = getString(R.string.calories_target, progress.targetCalories)
+        binding.tvCaloriesRemaining.text = progress.remainingCalories.toString()
+        binding.progressCalories.progress = progress.progressPercent
+    }
+
+    private fun moveDiaryDate(days: Int) {
+        val targetDay = addDays(selectedDiaryDayMillis, days)
+        val today = startOfDay(System.currentTimeMillis())
+        selectedDiaryDayMillis = targetDay.coerceAtMost(today)
+        loadDiaryForSelectedDate()
+    }
+
+    private fun updateDiaryDateHeader() {
+        val todayKey = MealLogEntryFactory.dateKey(System.currentTimeMillis())
+        val formattedDate = diaryDateFormatter.format(Date(selectedDiaryDayMillis))
+        binding.tvDiaryDate.text = if (selectedDiaryDateKey == todayKey) {
+            getString(R.string.diary_date_today, formattedDate)
+        } else {
+            getString(R.string.diary_date_regular, formattedDate)
+        }
+        binding.btnNextDiaryDate.isEnabled = selectedDiaryDayMillis < startOfDay(System.currentTimeMillis())
+    }
+
+    private fun smokeDiaryEntriesForSelectedDate(): List<MealLogEntry> {
+        val todayKey = MealLogEntryFactory.dateKey(System.currentTimeMillis())
+        if (selectedDiaryDateKey != todayKey) return emptyList()
+
+        return listOf(
+            MealLogEntry(
+                name = "Sữa chua",
+                weight = 150,
+                calories = 150,
+                mealType = MealType.BREAKFAST,
+                dateKey = todayKey,
+                sourceImageUri = null,
+                createdAtMillis = selectedDiaryDayMillis + 8 * HOUR_MILLIS,
+            ),
+            MealLogEntry(
+                name = "Cơm gà áp chảo",
+                weight = 320,
+                calories = 520,
+                mealType = MealType.LUNCH,
+                dateKey = todayKey,
+                sourceImageUri = null,
+                createdAtMillis = selectedDiaryDayMillis + 12 * HOUR_MILLIS,
+            ),
+            MealLogEntry(
+                name = "Chuối",
+                weight = 100,
+                calories = 89,
+                mealType = MealType.SNACK,
+                dateKey = todayKey,
+                sourceImageUri = null,
+                createdAtMillis = selectedDiaryDayMillis + 16 * HOUR_MILLIS,
+            ),
+        )
     }
 
     private fun openAnalysis(uri: Uri) {
@@ -288,13 +470,23 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private fun openMealSuggestionDetail(suggestion: MealSuggestion) {
+        val remainingCalories = DashboardProgressCalculator.calculate(
+            diaryEntries,
+            dashboardTargetCalories,
+        ).remainingCalories
+        startActivity(Intent(this, MealSuggestionDetailActivity::class.java).apply {
+            putExtra(MealSuggestionDetailActivity.EXTRA_SUGGESTION_ID, suggestion.id)
+            putExtra(MealSuggestionDetailActivity.EXTRA_REMAINING_CALORIES, remainingCalories)
+        })
+    }
+
     private fun signOut() {
-        firebaseAuth.signOut()
+        val token = sessionPreferences.authToken
         sessionPreferences.clear()
         lifecycleScope.launch {
-            runCatching {
-                CredentialManager.create(this@MainActivity)
-                    .clearCredentialState(ClearCredentialStateRequest())
+            if (!token.isNullOrBlank()) {
+                xamppRepository.logout(token)
             }
             openLogin()
         }
@@ -312,7 +504,25 @@ class MainActivity : AppCompatActivity() {
         const val PAGE_HOME = "home"
         const val PAGE_DIARY = "diary"
         const val PAGE_SUGGESTIONS = "suggestions"
-        private const val SUGGESTION_CHICKEN_RICE = "chicken_rice"
-        private const val SUGGESTION_TOFU_SALAD = "tofu_salad"
+        private const val SMOKE_TEST_TARGET_CALORIES = 2_000
+        private const val HOUR_MILLIS = 60 * 60 * 1_000L
+        private val diaryDateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
+
+        private fun startOfDay(timeMillis: Long): Long {
+            return Calendar.getInstance().apply {
+                timeInMillis = timeMillis
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        }
+
+        private fun addDays(timeMillis: Long, days: Int): Long {
+            return Calendar.getInstance().apply {
+                timeInMillis = timeMillis
+                add(Calendar.DAY_OF_YEAR, days)
+            }.timeInMillis
+        }
     }
 }

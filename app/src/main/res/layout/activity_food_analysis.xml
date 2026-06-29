@@ -16,13 +16,13 @@
             android:layout_height="match_parent"
             app:contentScrim="@color/food_green_700"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:title="Kết quả phân tích">
+            app:title="@string/analysis_result_toolbar_title">
 
             <ImageView
                 android:id="@+id/imgFood"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:contentDescription="Ảnh món ăn"
+                android:contentDescription="@string/analysis_food_image_content_description"
                 android:scaleType="centerCrop"
                 app:layout_collapseMode="parallax"
                 tools:src="@tools:sample/backgrounds/scenic" />
@@ -36,7 +36,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin" />
-
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -77,7 +76,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
-                        android:text="Đang phân tích món ăn..."
+                        android:text="@string/analysis_loading_title"
                         android:textColor="@color/food_text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -87,7 +86,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:gravity="center"
-                        android:text="FoodAI đang nhận diện tên món, khối lượng và lượng calo ước tính."
+                        android:text="@string/analysis_loading_message"
                         android:textColor="@color/food_text_secondary"
                         android:textSize="14sp" />
                 </LinearLayout>
@@ -111,7 +110,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Không thể phân tích ảnh"
+                        android:text="@string/analysis_error_title"
                         android:textColor="@color/food_error"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -130,7 +129,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
                         android:layout_marginTop="16dp"
-                        android:text="Thử lại"
+                        android:text="@string/action_retry"
                         android:textAllCaps="false"
                         app:backgroundTint="@color/food_green_600"
                         app:cornerRadius="16dp"
@@ -156,7 +155,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Chưa nhận diện được món ăn"
+                        android:text="@string/analysis_empty_title"
                         android:textColor="@color/food_text_primary"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -165,7 +164,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Bạn có thể thử ảnh rõ hơn, đủ sáng hơn hoặc chụp gần món ăn hơn."
+                        android:text="@string/analysis_empty_message"
                         android:textColor="@color/food_text_secondary"
                         android:textSize="14sp" />
 
@@ -174,7 +173,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
                         android:layout_marginTop="16dp"
-                        android:text="Thử lại"
+                        android:text="@string/action_retry"
                         android:textAllCaps="false"
                         app:backgroundTint="@color/food_green_600"
                         app:cornerRadius="16dp"
@@ -192,7 +191,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Món ăn nhận diện"
+                    android:text="@string/analysis_result_title"
                     android:textColor="@color/food_green_800"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -201,9 +200,105 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Bạn có thể sửa lại tên món, khối lượng hoặc calo nếu kết quả chưa chuẩn."
+                    android:text="@string/analysis_result_message"
                     android:textColor="@color/food_text_secondary"
                     android:textSize="14sp" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    app:cardBackgroundColor="@color/food_green_50"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/food_green_100"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/meal_picker_title"
+                            android:textColor="@color/food_text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/meal_picker_message"
+                            android:textColor="@color/food_text_secondary"
+                            android:textSize="13sp" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/mealChipGroup"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipBreakfast"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checkable="true"
+                                android:text="@string/meal_breakfast"
+                                android:textColor="@color/meal_chip_text"
+                                app:checkedIconVisible="false"
+                                app:chipBackgroundColor="@color/meal_chip_background"
+                                app:chipStrokeColor="@color/meal_chip_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:closeIconVisible="false" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipLunch"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checkable="true"
+                                android:checked="true"
+                                android:text="@string/meal_lunch"
+                                android:textColor="@color/meal_chip_text"
+                                app:checkedIconVisible="false"
+                                app:chipBackgroundColor="@color/meal_chip_background"
+                                app:chipStrokeColor="@color/meal_chip_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:closeIconVisible="false" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipDinner"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checkable="true"
+                                android:text="@string/meal_dinner"
+                                android:textColor="@color/meal_chip_text"
+                                app:checkedIconVisible="false"
+                                app:chipBackgroundColor="@color/meal_chip_background"
+                                app:chipStrokeColor="@color/meal_chip_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:closeIconVisible="false" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipSnack"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checkable="true"
+                                android:text="@string/meal_snack"
+                                android:textColor="@color/meal_chip_text"
+                                app:checkedIconVisible="false"
+                                app:chipBackgroundColor="@color/meal_chip_background"
+                                app:chipStrokeColor="@color/meal_chip_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:closeIconVisible="false" />
+                        </com.google.android.material.chip.ChipGroup>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvFoodItems"
@@ -212,18 +307,18 @@
                     android:layout_marginTop="8dp"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_food_result" />
-            </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSave"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="24dp"
-                android:text="Lưu vào nhật ký"
-                android:textAllCaps="false"
-                app:backgroundTint="@color/food_green_600"
-                app:cornerRadius="18dp"
-                app:icon="@android:drawable/ic_menu_save" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSave"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="18dp"
+                    android:text="@string/food_items_save_to_diary"
+                    android:textAllCaps="false"
+                    app:backgroundTint="@color/food_green_600"
+                    app:cornerRadius="18dp"
+                    app:icon="@android:drawable/ic_menu_save" />
+            </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

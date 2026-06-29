@@ -2,34 +2,25 @@ package com.example.dailymealrecomment
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Patterns
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
 import androidx.lifecycle.lifecycleScope
 import com.example.dailymealrecomment.data.SessionPreferences
 import com.example.dailymealrecomment.data.StartDestination
 import com.example.dailymealrecomment.data.StartDestinationResolver
-import com.example.dailymealrecomment.data.model.DietType
-import com.example.dailymealrecomment.data.model.Goal
-import com.example.dailymealrecomment.data.model.UserProfile
+import com.example.dailymealrecomment.data.xampp.XamppAuthSession
+import com.example.dailymealrecomment.data.xampp.XamppRepository
 import com.example.dailymealrecomment.databinding.ActivityLoginBinding
 import com.example.dailymealrecomment.ui.profile.ProfileActivity
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var credentialManager: CredentialManager
     private lateinit var sessionPreferences: SessionPreferences
-    private val firebaseAuth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
-    private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+    private val xamppRepository by lazy { XamppRepository() }
+    private var isRegisterMode = false
 
     private val smokeTestMode: Boolean
         get() = BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_SMOKE_TEST, false)
@@ -38,13 +29,12 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        credentialManager = CredentialManager.create(this)
         sessionPreferences = SessionPreferences(this)
 
         if (!smokeTestMode) {
             when (
                 StartDestinationResolver.resolve(
-                    hasFirebaseUser = firebaseAuth.currentUser != null,
+                    hasAuthenticatedSession = sessionPreferences.isLoggedIn,
                     isProfileCompleted = sessionPreferences.isProfileCompleted,
                 )
             ) {
@@ -60,125 +50,124 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        binding.btnGoogleSignIn.setOnClickListener {
-            if (smokeTestMode) openProfile() else signInWithGoogle()
+        binding.btnAuthPrimary.setOnClickListener {
+            if (smokeTestMode) openProfile() else submitAuthForm()
         }
+        binding.btnAuthModeToggle.setOnClickListener {
+            isRegisterMode = !isRegisterMode
+            updateAuthModeUi()
+        }
+        updateAuthModeUi()
     }
 
-    private fun signInWithGoogle() {
-        setLoading(true)
-        val googleIdOption = GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(false)
-            .setServerClientId(googleServerClientId())
-            .setAutoSelectEnabled(false)
-            .build()
-        val request = GetCredentialRequest.Builder()
-            .addCredentialOption(googleIdOption)
-            .build()
+    private fun submitAuthForm() {
+        clearErrors()
+        val name = binding.edtName.text?.toString()?.trim().orEmpty()
+        val email = binding.edtEmail.text?.toString()?.trim().orEmpty()
+        val password = binding.edtPassword.text?.toString().orEmpty()
 
+        if (isRegisterMode && name.length < MIN_NAME_LENGTH) {
+            binding.inputName.error = getString(R.string.auth_invalid_name)
+            binding.edtName.requestFocus()
+            return
+        }
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.inputEmail.error = getString(R.string.auth_invalid_email)
+            binding.edtEmail.requestFocus()
+            return
+        }
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            binding.inputPassword.error = getString(R.string.auth_invalid_password)
+            binding.edtPassword.requestFocus()
+            return
+        }
+
+        setLoading(true)
         lifecycleScope.launch {
             runCatching {
-                credentialManager.getCredential(this@LoginActivity, request).credential
-            }.onSuccess { credential ->
-                if (
-                    credential is CustomCredential &&
-                    credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-                ) {
-                    val googleCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                    authenticateWithFirebase(googleCredential.idToken)
+                if (isRegisterMode) {
+                    xamppRepository.register(name = name, email = email, password = password)
                 } else {
-                    setLoading(false)
-                    showError(getString(R.string.invalid_google_credential))
+                    xamppRepository.login(email = email, password = password)
                 }
+            }.onSuccess { session ->
+                saveSession(session)
+                routeAfterAuth(session)
             }.onFailure { error ->
                 setLoading(false)
-                showError(describeGoogleSignInError(error))
+                showError(error.localizedMessage ?: getString(R.string.auth_network_error))
             }
         }
-    }
-
-    private fun googleServerClientId(): String {
-        val generatedClientIdRes = resources.getIdentifier(
-            "default_web_client_id",
-            "string",
-            packageName,
-        )
-        return if (generatedClientIdRes != 0) {
-            getString(generatedClientIdRes)
-        } else {
-            getString(R.string.google_web_client_id)
-        }
-    }
-
-    private fun describeGoogleSignInError(error: Throwable): String {
-        val rawMessage = error.localizedMessage.orEmpty()
-        return when {
-            rawMessage.contains("Developer console is not set up correctly", ignoreCase = true) ||
-                rawMessage.contains("28444", ignoreCase = true) -> {
-                getString(R.string.google_console_setup_error)
-            }
-            else -> rawMessage.ifBlank { getString(R.string.google_sign_in_failed) }
-        }
-    }
-
-    private fun authenticateWithFirebase(idToken: String) {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        firebaseAuth.signInWithCredential(credential)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    routeAuthenticatedUser()
-                } else {
-                    setLoading(false)
-                    showError(task.exception?.localizedMessage ?: getString(R.string.firebase_sign_in_failed))
-                }
-            }
     }
 
     private fun routeAuthenticatedUser() {
-        if (sessionPreferences.isProfileCompleted) {
-            openMain()
-            return
-        }
-        val user = firebaseAuth.currentUser
-        if (user == null) {
+        val token = sessionPreferences.authToken
+        if (token.isNullOrBlank()) {
             setLoading(false)
             return
         }
 
         setLoading(true)
-        firestore.collection("users").document(user.uid).get()
-            .addOnSuccessListener { document ->
-                if (document.getBoolean("profileCompleted") == true) {
-                    cacheRemoteProfile(document.data.orEmpty())
-                    openMain()
-                } else {
-                    openProfile()
+        lifecycleScope.launch {
+            runCatching { xamppRepository.fetchProfile(token) }
+                .onSuccess { profile ->
+                    if (profile != null) {
+                        sessionPreferences.saveProfile(profile.profile, profile.dailyCalorieTarget)
+                        openMain()
+                    } else {
+                        openProfile()
+                    }
                 }
-            }
-            .addOnFailureListener {
-                if (sessionPreferences.isProfileCompleted) openMain() else openProfile()
-            }
+                .onFailure {
+                    if (sessionPreferences.isProfileCompleted) {
+                        openMain()
+                    } else {
+                        openProfile()
+                    }
+                }
+        }
     }
 
-    private fun cacheRemoteProfile(data: Map<String, Any>) {
-        val goal = runCatching {
-            Goal.valueOf(data["goal"] as? String ?: Goal.MAINTAIN_WEIGHT.name)
-        }.getOrDefault(Goal.MAINTAIN_WEIGHT)
-        val diet = runCatching {
-            DietType.valueOf(data["dietType"] as? String ?: DietType.NORMAL.name)
-        }.getOrDefault(DietType.NORMAL)
-        val profile = UserProfile(
-            heightCm = (data["heightCm"] as? Number)?.toDouble() ?: 0.0,
-            weightKg = (data["weightKg"] as? Number)?.toDouble() ?: 0.0,
-            age = (data["age"] as? Number)?.toInt() ?: 0,
-            isMale = data["isMale"] as? Boolean ?: true,
-            goal = goal,
-            dietType = diet,
-            activityLevel = (data["activityLevel"] as? Number)?.toDouble() ?: 1.2,
+    private fun saveSession(session: XamppAuthSession) {
+        sessionPreferences.saveSession(
+            token = session.token,
+            userId = session.user.id,
+            name = session.user.name,
+            email = session.user.email,
+            profileCompleted = session.user.profileCompleted,
         )
-        val target = (data["dailyCalorieTarget"] as? Number)?.toInt()
-            ?: SessionPreferences.DEFAULT_CALORIE_TARGET
-        sessionPreferences.saveProfile(profile, target)
+        session.profile?.let { profile ->
+            sessionPreferences.saveProfile(profile.profile, profile.dailyCalorieTarget)
+        }
+    }
+
+    private fun routeAfterAuth(session: XamppAuthSession) {
+        val hasProfile = session.user.profileCompleted || session.profile != null
+        if (hasProfile) openMain() else openProfile()
+    }
+
+    private fun updateAuthModeUi() {
+        binding.inputName.visibility = if (isRegisterMode) View.VISIBLE else View.GONE
+        binding.tvAuthTitle.setText(
+            if (isRegisterMode) R.string.auth_register_title else R.string.auth_login_title,
+        )
+        binding.tvAuthMessage.setText(
+            if (isRegisterMode) R.string.auth_register_message else R.string.auth_login_message,
+        )
+        binding.btnAuthPrimary.setText(
+            if (isRegisterMode) R.string.auth_register_button else R.string.auth_login_button,
+        )
+        binding.btnAuthModeToggle.setText(
+            if (isRegisterMode) R.string.auth_go_login else R.string.auth_go_register,
+        )
+        clearErrors()
+        binding.tvStatus.text = ""
+    }
+
+    private fun clearErrors() {
+        binding.inputName.error = null
+        binding.inputEmail.error = null
+        binding.inputPassword.error = null
     }
 
     private fun openProfile() {
@@ -195,7 +184,11 @@ class LoginActivity : AppCompatActivity() {
 
     private fun setLoading(isLoading: Boolean) {
         binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        binding.btnGoogleSignIn.isEnabled = !isLoading
+        binding.btnAuthPrimary.isEnabled = !isLoading
+        binding.btnAuthModeToggle.isEnabled = !isLoading
+        binding.inputName.isEnabled = !isLoading
+        binding.inputEmail.isEnabled = !isLoading
+        binding.inputPassword.isEnabled = !isLoading
         binding.tvStatus.text = if (isLoading) getString(R.string.checking_account) else ""
     }
 
@@ -206,5 +199,7 @@ class LoginActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_SMOKE_TEST = "com.example.dailymealrecomment.SMOKE_TEST"
+        private const val MIN_NAME_LENGTH = 2
+        private const val MIN_PASSWORD_LENGTH = 6
     }
 }

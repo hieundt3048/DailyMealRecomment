@@ -10,7 +10,7 @@ class StartDestinationResolverTest {
     fun signedOutUserMustSeeLogin() {
         assertEquals(
             StartDestination.LOGIN,
-            StartDestinationResolver.resolve(hasFirebaseUser = false, isProfileCompleted = false),
+            StartDestinationResolver.resolve(hasAuthenticatedSession = false, isProfileCompleted = false),
         )
     }
 
@@ -18,7 +18,7 @@ class StartDestinationResolverTest {
     fun signedInUserWithoutProfileMustLoadProfile() {
         assertEquals(
             StartDestination.PROFILE_LOOKUP,
-            StartDestinationResolver.resolve(hasFirebaseUser = true, isProfileCompleted = false),
+            StartDestinationResolver.resolve(hasAuthenticatedSession = true, isProfileCompleted = false),
         )
     }
 
@@ -26,7 +26,7 @@ class StartDestinationResolverTest {
     fun signedInUserWithCompletedProfileGoesToMain() {
         assertEquals(
             StartDestination.MAIN,
-            StartDestinationResolver.resolve(hasFirebaseUser = true, isProfileCompleted = true),
+            StartDestinationResolver.resolve(hasAuthenticatedSession = true, isProfileCompleted = true),
         )
     }
 }

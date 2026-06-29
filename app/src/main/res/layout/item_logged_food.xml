@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/food_surface_card"
     app:cardCornerRadius="16dp"
     app:cardElevation="1dp"
     app:strokeWidth="0dp">
@@ -26,25 +26,25 @@
                 android:id="@+id/tvFoodName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Oatmeal with Blueberries"
-                android:textAppearance="?attr/textAppearanceTitleMedium" />
+                android:text="@string/analysis_result_title"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="@color/food_text_primary" />
 
             <TextView
                 android:id="@+id/tvMealDetails"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Breakfast • 250g"
+                android:text="@string/diary_food_weight"
                 android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="?attr/colorOnSurfaceVariant" />
+                android:textColor="@color/food_text_secondary" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/tvCalories"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="350 kcal"
+            android:text="@string/diary_food_calories"
             android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:textColor="?attr/colorPrimary" />
-
+            android:textColor="@color/food_green_700" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

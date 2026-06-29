@@ -19,6 +19,9 @@
         android:theme="@style/Theme.DailyMealRecomment">
 
         <activity
+            android:name=".MealSuggestionDetailActivity"
+            android:exported="false" />
+        <activity
             android:name=".FoodAnalysisActivity"
             android:exported="false" />
         <activity

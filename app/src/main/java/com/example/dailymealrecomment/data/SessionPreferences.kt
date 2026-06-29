@@ -8,11 +8,42 @@ import com.example.dailymealrecomment.data.model.UserProfile
 class SessionPreferences(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
+    val isLoggedIn: Boolean
+        get() = !authToken.isNullOrBlank()
+
+    val authToken: String?
+        get() = preferences.getString(KEY_AUTH_TOKEN, null)
+
+    val userId: Int
+        get() = preferences.getInt(KEY_USER_ID, 0)
+
+    val userName: String?
+        get() = preferences.getString(KEY_USER_NAME, null)
+
+    val userEmail: String?
+        get() = preferences.getString(KEY_USER_EMAIL, null)
+
     val isProfileCompleted: Boolean
         get() = preferences.getBoolean(KEY_PROFILE_COMPLETED, false)
 
     val dailyCalorieTarget: Int
         get() = preferences.getInt(KEY_DAILY_CALORIE_TARGET, DEFAULT_CALORIE_TARGET)
+
+    fun saveSession(
+        token: String,
+        userId: Int,
+        name: String,
+        email: String,
+        profileCompleted: Boolean,
+    ) {
+        preferences.edit()
+            .putString(KEY_AUTH_TOKEN, token)
+            .putInt(KEY_USER_ID, userId)
+            .putString(KEY_USER_NAME, name)
+            .putString(KEY_USER_EMAIL, email)
+            .putBoolean(KEY_PROFILE_COMPLETED, profileCompleted || isProfileCompleted)
+            .apply()
+    }
 
     fun saveProfile(profile: UserProfile, calorieTarget: Int) {
         preferences.edit()
@@ -52,6 +83,10 @@ class SessionPreferences(context: Context) {
     companion object {
         const val DEFAULT_CALORIE_TARGET = 2_000
         private const val PREFERENCES_NAME = "food_ai_session"
+        private const val KEY_AUTH_TOKEN = "auth_token"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_USER_NAME = "user_name"
+        private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_PROFILE_COMPLETED = "profile_completed"
         private const val KEY_HEIGHT_CM = "height_cm"
         private const val KEY_WEIGHT_KG = "weight_kg"

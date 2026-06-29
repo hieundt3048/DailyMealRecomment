@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("com.google.gms.google-services")
 }
 
 val localProperties = Properties()
@@ -19,6 +18,9 @@ val foodAiEndpoint: String = localProperties.getProperty("FOOD_AI_ENDPOINT")
 val foodAiTimeoutMs: Long = localProperties.getProperty("FOOD_AI_TIMEOUT_MS")?.toLongOrNull()
     ?: providers.gradleProperty("FOOD_AI_TIMEOUT_MS").orNull?.toLongOrNull()
     ?: 15_000L
+val xamppApiBaseUrl: String = localProperties.getProperty("XAMPP_API_BASE_URL")
+    ?: providers.gradleProperty("XAMPP_API_BASE_URL").orNull
+    ?: "http://10.0.2.2/foodai-api/api"
 
 android {
     namespace = "com.example.dailymealrecomment"
@@ -37,6 +39,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "FOOD_AI_ENDPOINT", foodAiEndpoint.asBuildConfigString())
         buildConfigField("long", "FOOD_AI_TIMEOUT_MS", "${foodAiTimeoutMs}L")
+        buildConfigField("String", "XAMPP_API_BASE_URL", xamppApiBaseUrl.asBuildConfigString())
     }
 
     buildTypes {
@@ -74,18 +77,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
     implementation("com.google.android.material:material:1.13.0")
 
-    implementation("androidx.credentials:credentials:1.5.0")
-    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
-
     implementation("androidx.camera:camera-core:1.4.2")
     implementation("androidx.camera:camera-camera2:1.4.2")
     implementation("androidx.camera:camera-lifecycle:1.4.2")
     implementation("androidx.camera:camera-view:1.4.2")
-
-    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

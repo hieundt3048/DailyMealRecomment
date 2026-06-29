@@ -5,8 +5,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.credentials.ClearCredentialStateRequest
-import androidx.credentials.CredentialManager
 import androidx.lifecycle.lifecycleScope
 import com.example.dailymealrecomment.BuildConfig
 import com.example.dailymealrecomment.CameraActivity
@@ -14,21 +12,16 @@ import com.example.dailymealrecomment.LoginActivity
 import com.example.dailymealrecomment.MainActivity
 import com.example.dailymealrecomment.R
 import com.example.dailymealrecomment.data.SessionPreferences
-import com.example.dailymealrecomment.data.model.DietType
-import com.example.dailymealrecomment.data.model.Goal
 import com.example.dailymealrecomment.data.model.UserProfile
+import com.example.dailymealrecomment.data.xampp.XamppRepository
 import com.example.dailymealrecomment.databinding.ActivityProfileBinding
 import com.example.dailymealrecomment.utilities.CalorieCalculator
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.launch
 
 class ProfileActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileBinding
     private lateinit var sessionPreferences: SessionPreferences
-    private val firebaseAuth by lazy { FirebaseAuth.getInstance() }
-    private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private val xamppRepository by lazy { XamppRepository() }
     private var hasCompletedProfile = false
 
     private val smokeTestMode: Boolean
@@ -40,7 +33,7 @@ class ProfileActivity : AppCompatActivity() {
         setContentView(binding.root)
         sessionPreferences = SessionPreferences(this)
 
-        if (firebaseAuth.currentUser == null && !smokeTestMode) {
+        if (!sessionPreferences.isLoggedIn && !smokeTestMode) {
             openLogin()
             return
         }
@@ -50,7 +43,7 @@ class ProfileActivity : AppCompatActivity() {
         updateCompletedProfileUi()
 
         sessionPreferences.cachedProfile()?.let(::showProfile)
-        if (!smokeTestMode) loadProfileFromFirestore()
+        if (!smokeTestMode) loadProfileFromXampp()
         binding.btnCalculate.setOnClickListener { saveProfileAndContinue() }
         binding.btnSignOut.setOnClickListener { signOut() }
     }
@@ -116,57 +109,55 @@ class ProfileActivity : AppCompatActivity() {
             return
         }
 
-        sessionPreferences.saveProfile(profile, calorieTarget)
-        val user = firebaseAuth.currentUser ?: return
-        binding.btnCalculate.isEnabled = false
-        binding.btnCalculate.text = getString(R.string.saving_profile)
-        val data = mapOf(
-            "uid" to user.uid,
-            "name" to (user.displayName ?: ""),
-            "email" to (user.email ?: ""),
-            "heightCm" to profile.heightCm,
-            "weightKg" to profile.weightKg,
-            "age" to profile.age,
-            "isMale" to profile.isMale,
-            "goal" to goal.name,
-            "dietType" to dietType.name,
-            "activityLevel" to profile.activityLevel,
-            "dailyCalorieTarget" to calorieTarget,
-            "profileCompleted" to true,
-        )
-        firestore.collection("users").document(user.uid)
-            .set(data, SetOptions.merge())
-            .addOnSuccessListener { openMain(clearTask = true) }
-            .addOnFailureListener {
-                Toast.makeText(this, R.string.profile_saved_locally, Toast.LENGTH_LONG).show()
+        val token = sessionPreferences.authToken
+        if (token.isNullOrBlank()) {
+            openLogin()
+            return
+        }
+
+        setSaving(true)
+        lifecycleScope.launch {
+            runCatching {
+                xamppRepository.saveProfile(
+                    token = token,
+                    profile = profile,
+                    dailyCalorieTarget = calorieTarget,
+                )
+            }.onSuccess {
+                sessionPreferences.saveProfile(profile, calorieTarget)
+                hasCompletedProfile = true
+                updateCompletedProfileUi()
                 openMain(clearTask = true)
+            }.onFailure { error ->
+                setSaving(false)
+                Toast.makeText(
+                    this@ProfileActivity,
+                    error.localizedMessage ?: getString(R.string.profile_save_failed),
+                    Toast.LENGTH_LONG,
+                ).show()
             }
+        }
     }
 
-    private fun loadProfileFromFirestore() {
-        val user = firebaseAuth.currentUser ?: return
-        firestore.collection("users").document(user.uid).get()
-            .addOnSuccessListener { document ->
-                if (!document.exists()) return@addOnSuccessListener
-                val profile = UserProfile(
-                    heightCm = document.getDouble("heightCm") ?: return@addOnSuccessListener,
-                    weightKg = document.getDouble("weightKg") ?: return@addOnSuccessListener,
-                    age = document.getLong("age")?.toInt() ?: return@addOnSuccessListener,
-                    isMale = document.getBoolean("isMale") != false,
-                    goal = enumValueOrDefault(document.getString("goal"), Goal.MAINTAIN_WEIGHT),
-                    dietType = enumValueOrDefault(document.getString("dietType"), DietType.NORMAL),
-                    activityLevel = document.getDouble("activityLevel") ?: 1.2,
-                )
-                val target = document.getLong("dailyCalorieTarget")?.toInt()
-                    ?: CalorieCalculator.calculateDailyCalorieTarget(profile)
-                showProfile(profile)
-                binding.tvResult.text = getString(R.string.calorie_result, target)
-                if (document.getBoolean("profileCompleted") == true) {
-                    sessionPreferences.saveProfile(profile, target)
+    private fun loadProfileFromXampp() {
+        val token = sessionPreferences.authToken ?: return
+        lifecycleScope.launch {
+            runCatching { xamppRepository.fetchProfile(token) }
+                .onSuccess { remoteProfile ->
+                    if (remoteProfile == null) return@onSuccess
+                    showProfile(remoteProfile.profile)
+                    binding.tvResult.text = getString(
+                        R.string.calorie_result,
+                        remoteProfile.dailyCalorieTarget,
+                    )
+                    sessionPreferences.saveProfile(
+                        remoteProfile.profile,
+                        remoteProfile.dailyCalorieTarget,
+                    )
                     hasCompletedProfile = true
                     updateCompletedProfileUi()
                 }
-            }
+        }
     }
 
     private fun showProfile(profile: UserProfile) {
@@ -204,6 +195,17 @@ class ProfileActivity : AppCompatActivity() {
         )
     }
 
+    private fun setSaving(isSaving: Boolean) {
+        binding.btnCalculate.isEnabled = !isSaving
+        binding.btnCalculate.text = getString(
+            if (isSaving) R.string.saving_profile else if (hasCompletedProfile) {
+                R.string.profile_update
+            } else {
+                R.string.profile_save_continue
+            },
+        )
+    }
+
     private fun clearFormErrors() {
         binding.edtHeight.error = null
         binding.edtWeight.error = null
@@ -228,12 +230,11 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun signOut() {
-        firebaseAuth.signOut()
+        val token = sessionPreferences.authToken
         sessionPreferences.clear()
         lifecycleScope.launch {
-            runCatching {
-                CredentialManager.create(this@ProfileActivity)
-                    .clearCredentialState(ClearCredentialStateRequest())
+            if (!token.isNullOrBlank()) {
+                xamppRepository.logout(token)
             }
             openLogin()
         }
@@ -244,10 +245,6 @@ class ProfileActivity : AppCompatActivity() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         })
         finish()
-    }
-
-    private inline fun <reified T : Enum<T>> enumValueOrDefault(value: String?, fallback: T): T {
-        return runCatching { enumValueOf<T>(value.orEmpty()) }.getOrDefault(fallback)
     }
 
     private fun Double.toDisplayNumber(): String {
