@@ -68,6 +68,7 @@ class MealSuggestionRecommenderTest {
                     name = "Fish",
                     calories = 300,
                     isVegan = false,
+                    weightGrams = 180,
                 ),
             ),
             dietType = DietType.VEGAN,

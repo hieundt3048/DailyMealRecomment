@@ -83,9 +83,7 @@ class AppFlowSmokeTest {
             onView(withId(R.id.btnGallery)).perform(click())
             intended(hasAction(Intent.ACTION_OPEN_DOCUMENT))
             onView(withId(R.id.tvGalleryStatus)).check(matches(withText(R.string.gallery_picker_cancelled)))
-            onView(withId(R.id.nav_suggestions)).perform(click())
-            onView(withId(R.id.tvSuggestionRemainingStatus)).check(matches(isDisplayed()))
-            onView(withId(R.id.rvSuggestionMeals)).check(matches(isDisplayed()))
+            onView(withId(R.id.rvHomeMealSuggestions)).perform(scrollTo()).check(matches(isDisplayed()))
         }
     }
 

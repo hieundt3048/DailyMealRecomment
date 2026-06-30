@@ -64,10 +64,6 @@ class ProfileActivity : AppCompatActivity() {
                     startActivity(Intent(this, CameraActivity::class.java))
                     false
                 }
-                R.id.nav_suggestions -> {
-                    openMain(MainActivity.PAGE_SUGGESTIONS, clearTask = false)
-                    false
-                }
                 R.id.nav_profile -> true
                 else -> false
             }

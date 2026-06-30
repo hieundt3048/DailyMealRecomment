@@ -9,10 +9,24 @@ import org.junit.Test
 
 class DietSuggestionFilterTest {
     private val suggestions = listOf(
-        MealSuggestion(id = "chicken_rice", name = "Cơm gà áp chảo", calories = 520, isVegan = false),
-        MealSuggestion(id = "tofu_salad", name = "Salad đậu phụ", calories = 430, isVegan = true),
-        MealSuggestion(id = "vegan_noodle", name = "Bún rau nấm", calories = 480, isVegan = true),
+        MealSuggestion(id = "chicken_rice", name = "Cơm gà áp chảo", calories = 520, isVegan = false, weightGrams = 250),
+        MealSuggestion(id = "tofu_salad", name = "Salad đậu phụ", calories = 430, isVegan = true, weightGrams = 300),
+        MealSuggestion(id = "vegan_noodle", name = "Bún rau nấm", calories = 480, isVegan = true, weightGrams = 320),
     )
+
+    @Test
+    fun normalDietSortsNormalMealsFirstAndStillKeepsAllSuggestions() {
+        val result = DietSuggestionFilter.sortForDiet(suggestions, DietType.NORMAL)
+
+        assertEquals(listOf("chicken_rice", "tofu_salad", "vegan_noodle"), result.map { it.id })
+    }
+
+    @Test
+    fun veganDietSortsVeganMealsFirstAndStillKeepsAllSuggestions() {
+        val result = DietSuggestionFilter.sortForDiet(suggestions, DietType.VEGAN)
+
+        assertEquals(listOf("tofu_salad", "vegan_noodle", "chicken_rice"), result.map { it.id })
+    }
 
     @Test
     fun normalDietKeepsAllSuggestions() {

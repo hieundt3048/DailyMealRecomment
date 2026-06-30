@@ -46,6 +46,7 @@ class MealSuggestionAdapter(
             remainingCalories: Int,
         ) {
             val context = binding.root.context
+            binding.ivSuggestionImage.setImageResource(suggestion.imageResId)
             binding.tvSuggestionName.text = suggestion.name
             binding.tvSuggestionServing.text = suggestion.serving
             binding.tvSuggestionCalories.text = context.getString(

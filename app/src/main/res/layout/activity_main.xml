@@ -68,12 +68,11 @@
                             android:id="@+id/progressCalories"
                             style="?android:attr/progressBarStyleHorizontal"
                             android:layout_width="match_parent"
-                            android:layout_height="10dp"
-                            android:layout_marginTop="12dp"
+                            android:layout_height="22dp"
+                            android:layout_marginTop="16dp"
                             android:max="100"
                             android:progress="0"
-                            android:progressBackgroundTint="#45FFFFFF"
-                            android:progressTint="@color/food_lime" />
+                            android:progressDrawable="@drawable/progress_calorie_large" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -159,40 +158,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Lối tắt nhanh"
-                            android:textColor="@color/food_text_primary"
-                            android:textSize="19sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Dùng thanh bên dưới để mở nhật ký, xem gợi ý món ăn hoặc chỉnh hồ sơ cá nhân."
-                            android:textColor="@color/food_text_secondary"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="16dp"
-                    android:layout_marginTop="14dp"
-                    app:cardBackgroundColor="@color/food_surface_card"
-                    app:cardCornerRadius="22dp"
-                    app:cardElevation="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="12dp">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -202,13 +168,21 @@
                             android:textSize="19sp"
                             android:textStyle="bold" />
 
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/home_meal_list_message"
-                            android:textColor="@color/food_text_secondary"
-                            android:textSize="14sp" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDietSortStatus"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="42dp"
+                            android:layout_marginTop="8dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="14dp"
+                            android:text="@string/home_sort_normal"
+                            android:textAllCaps="false"
+                            android:textColor="@color/food_green_700"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="20dp"
+                            app:strokeColor="@color/food_green_600" />
 
                         <androidx.recyclerview.widget.RecyclerView
                             android:id="@+id/rvHomeMealSuggestions"
@@ -379,123 +353,6 @@
                 android:paddingBottom="16dp" />
         </LinearLayout>
 
-        <ScrollView
-            android:id="@+id/pageSuggestions"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fillViewport="true"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Gợi ý món ăn"
-                    android:textColor="@color/food_text_primary"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvSuggestionDietStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/suggestions_status_normal"
-                    android:textColor="@color/food_text_secondary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/tvSuggestionRemainingStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@color/food_green_50"
-                    android:padding="12dp"
-                    android:text="@string/suggestions_remaining_status_preview"
-                    android:textColor="@color/food_green_900"
-                    android:textSize="14sp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvSuggestionMeals"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:clipToPadding="false"
-                    android:nestedScrollingEnabled="false"
-                    android:overScrollMode="never" />
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardChickenSuggestion"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:visibility="gone"
-                    app:cardBackgroundColor="@color/food_surface_card"
-                    app:cardCornerRadius="22dp"
-                    app:cardElevation="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Cơm gà áp chảo"
-                            android:textColor="@color/food_text_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Khoảng 520 kcal • phù hợp chế độ bình thường"
-                            android:textColor="@color/food_text_secondary" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardTofuSuggestion"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:visibility="gone"
-                    app:cardBackgroundColor="@color/food_green_50"
-                    app:cardCornerRadius="22dp"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Salad đậu phụ"
-                            android:textColor="@color/food_green_900"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Khoảng 430 kcal • hợp chế độ thuần chay"
-                            android:textColor="@color/food_text_secondary" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-        </ScrollView>
     </FrameLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

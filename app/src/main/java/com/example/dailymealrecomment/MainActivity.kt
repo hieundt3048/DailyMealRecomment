@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.dailymealrecomment.data.SessionPreferences
 import com.example.dailymealrecomment.data.dashboard.DashboardProgressCalculator
@@ -24,7 +25,7 @@ import com.example.dailymealrecomment.data.model.MealSuggestionCatalog
 import com.example.dailymealrecomment.data.xampp.XamppRepository
 import com.example.dailymealrecomment.databinding.ActivityMainBinding
 import com.example.dailymealrecomment.ui.profile.ProfileActivity
-import com.example.dailymealrecomment.utilities.MealSuggestionRecommender
+import com.example.dailymealrecomment.utilities.DietSuggestionFilter
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -36,7 +37,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sessionPreferences: SessionPreferences
     private lateinit var foodLogAdapter: FoodLogAdapter
     private lateinit var homeMealSuggestionAdapter: MealSuggestionAdapter
-    private lateinit var suggestionAdapter: MealSuggestionAdapter
     private val xamppRepository by lazy { XamppRepository() }
     private val mealLogRepository by lazy { MealLogRepository(xamppRepository) }
     private var selectedDiaryDayMillis: Long = startOfDay(System.currentTimeMillis())
@@ -92,17 +92,14 @@ class MainActivity : AppCompatActivity() {
         binding.rvTodayLog.layoutManager = LinearLayoutManager(this)
         binding.rvTodayLog.adapter = foodLogAdapter
         homeMealSuggestionAdapter = MealSuggestionAdapter(::openMealSuggestionDetail)
-        binding.rvHomeMealSuggestions.layoutManager = LinearLayoutManager(this)
+        binding.rvHomeMealSuggestions.layoutManager = GridLayoutManager(this, 2)
         binding.rvHomeMealSuggestions.adapter = homeMealSuggestionAdapter
         binding.rvHomeMealSuggestions.isNestedScrollingEnabled = false
-        suggestionAdapter = MealSuggestionAdapter(::openMealSuggestionDetail)
-        binding.rvSuggestionMeals.layoutManager = LinearLayoutManager(this)
-        binding.rvSuggestionMeals.adapter = suggestionAdapter
-        binding.rvSuggestionMeals.isNestedScrollingEnabled = false
         binding.toolbar.subtitle = sessionPreferences.userName ?: sessionPreferences.userEmail
         setupToolbar()
         setupImageActions()
         setupDiaryActions()
+        setupDietSortButton()
         setupBottomNavigation()
         dashboardTargetCalories = if (smokeTestMode) {
             SMOKE_TEST_TARGET_CALORIES
@@ -119,8 +116,12 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        selectStartPage(intent.getStringExtra(EXTRA_START_PAGE))
-        if (intent.getStringExtra(EXTRA_START_PAGE) == PAGE_DIARY) {
+        val startPage = intent.getStringExtra(EXTRA_START_PAGE)
+        if (startPage == PAGE_DIARY) {
+            selectedDiaryDayMillis = startOfDay(System.currentTimeMillis())
+        }
+        selectStartPage(startPage)
+        if (startPage == PAGE_DIARY) {
             loadDiaryForSelectedDate()
         }
     }
@@ -168,6 +169,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupDietSortButton() {
+        binding.btnDietSortStatus.setOnClickListener {
+            openProfile()
+        }
+    }
+
     private fun openGalleryPicker() {
         showGalleryStatus(R.string.gallery_picker_opening)
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -200,10 +207,6 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, CameraActivity::class.java))
                     false
                 }
-                R.id.nav_suggestions -> {
-                    showSuggestionsPage()
-                    true
-                }
                 R.id.nav_profile -> {
                     openProfile()
                     false
@@ -215,7 +218,6 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_home -> showHomePage()
                 R.id.nav_diary -> showDiaryPage()
-                R.id.nav_suggestions -> showSuggestionsPage()
             }
         }
         binding.bottomNavigation.selectedItemId = R.id.nav_home
@@ -224,7 +226,6 @@ class MainActivity : AppCompatActivity() {
     private fun selectStartPage(startPage: String?) {
         binding.bottomNavigation.selectedItemId = when (startPage) {
             PAGE_DIARY -> R.id.nav_diary
-            PAGE_SUGGESTIONS -> R.id.nav_suggestions
             else -> R.id.nav_home
         }
     }
@@ -232,7 +233,6 @@ class MainActivity : AppCompatActivity() {
     private fun showHomePage() {
         binding.pageHome.visibility = View.VISIBLE
         binding.pageDiary.visibility = View.GONE
-        binding.pageSuggestions.visibility = View.GONE
         binding.toolbar.title = getString(R.string.nav_home)
     }
 
@@ -240,46 +240,40 @@ class MainActivity : AppCompatActivity() {
         updateDiaryDateHeader()
         binding.pageHome.visibility = View.GONE
         binding.pageDiary.visibility = View.VISIBLE
-        binding.pageSuggestions.visibility = View.GONE
         binding.toolbar.title = getString(R.string.nav_diary)
     }
 
-    private fun showSuggestionsPage() {
-        updateSuggestionCards()
-        binding.pageHome.visibility = View.GONE
-        binding.pageDiary.visibility = View.GONE
-        binding.pageSuggestions.visibility = View.VISIBLE
-        binding.toolbar.title = getString(R.string.nav_suggestions)
-    }
-
     private fun updateSuggestionCards() {
-        val dietType = sessionPreferences.cachedProfile()?.dietType ?: DietType.NORMAL
         val remainingCalories = DashboardProgressCalculator.calculate(
             diaryEntries,
             dashboardTargetCalories,
         ).remainingCalories
-        val recommendedSuggestions = MealSuggestionRecommender.recommend(
-            suggestions = mealSuggestions,
-            dietType = dietType,
-            remainingCalories = remainingCalories,
-        )
+        val dietType = sessionPreferences.cachedProfile()?.dietType ?: DietType.NORMAL
+        val sortedSuggestions = DietSuggestionFilter.sortForDiet(mealSuggestions, dietType)
 
-        homeMealSuggestionAdapter.submitList(recommendedSuggestions, remainingCalories)
-        suggestionAdapter.submitList(recommendedSuggestions, remainingCalories)
-        binding.tvSuggestionRemainingStatus.text = getString(
-            if (recommendedSuggestions.isEmpty()) {
-                R.string.suggestions_remaining_status_empty
+        homeMealSuggestionAdapter.submitList(sortedSuggestions, remainingCalories)
+        binding.btnDietSortStatus.setText(
+            if (dietType == DietType.VEGAN) {
+                R.string.home_sort_vegan
             } else {
-                R.string.suggestions_remaining_status
-            },
-            remainingCalories,
+                R.string.home_sort_normal
+            }
         )
-        binding.tvSuggestionDietStatus.text = if (dietType == DietType.VEGAN) {
-            getString(R.string.suggestions_status_vegan)
-        } else {
-            getString(R.string.suggestions_status_normal)
-        }
+        resizeHomeMealList(sortedSuggestions.size)
     }
+
+    private fun resizeHomeMealList(itemCount: Int) {
+        val columnCount = 2
+        val rowCount = (itemCount + columnCount - 1) / columnCount
+        val rowHeight = dpToPx(310)
+        binding.rvHomeMealSuggestions.layoutParams =
+            binding.rvHomeMealSuggestions.layoutParams.apply {
+                height = rowCount * rowHeight
+            }
+    }
+
+    private fun dpToPx(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 
     private fun loadCalorieTarget() {
         val token = sessionPreferences.authToken ?: return
@@ -503,7 +497,6 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_START_PAGE = "com.example.dailymealrecomment.START_PAGE"
         const val PAGE_HOME = "home"
         const val PAGE_DIARY = "diary"
-        const val PAGE_SUGGESTIONS = "suggestions"
         private const val SMOKE_TEST_TARGET_CALORIES = 2_000
         private const val HOUR_MILLIS = 60 * 60 * 1_000L
         private val diaryDateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
