@@ -441,10 +441,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun persistGalleryReadPermission(uri: Uri, data: Intent) {
-        val takeFlags = data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
-        if (takeFlags != 0) {
+        val hasReadPermission = data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
+        if (hasReadPermission != 0) {
             runCatching {
-                contentResolver.takePersistableUriPermission(uri, takeFlags)
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
             }
         }
     }

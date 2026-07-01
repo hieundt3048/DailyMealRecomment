@@ -8,8 +8,6 @@
     <string name="calories_consumed">Đã nạp: %1$d kcal</string>
     <string name="calories_target">Mục tiêu: %1$d kcal</string>
     <string name="saving_profile">Đang lưu…</string>
-    <string name="profile_saved_locally">Đã lưu hồ sơ trên thiết bị. Dữ liệu sẽ đồng bộ khi có mạng.</string>
-    <string name="camera_permission_required">Ứng dụng cần quyền Camera để chụp món ăn.</string>
     <string name="camera_start_failed">Không thể khởi động Camera.</string>
     <string name="photo_capture_failed">Không thể chụp ảnh. Vui lòng thử lại.</string>
     <string name="camera_screen_title">Chụp món ăn</string>
@@ -35,7 +33,6 @@
     <string name="gallery_picker_unreadable">Không đọc được ảnh đã chọn. Vui lòng chọn ảnh khác.</string>
     <string name="gallery_picker_selected">Đã chọn ảnh, đang mở màn phân tích…</string>
     <string name="gallery_picker_unavailable">Thiết bị chưa có ứng dụng chọn ảnh phù hợp.</string>
-    <string name="food_items_ready">Đã xác nhận %1$d món ăn.</string>
     <string name="nav_home">Trang chính</string>
     <string name="nav_diary">Nhật ký</string>
     <string name="nav_scan">Quét</string>
@@ -59,7 +56,6 @@
     <string name="suggestion_detail_recipe">Cách chế biến</string>
     <string name="suggestion_detail_missing">Không tìm thấy món gợi ý.</string>
     <string name="suggestion_add_to_diary">Thêm vào nhật ký</string>
-    <string name="suggestion_add_to_diary_message">Chọn bữa ăn để cộng calo của món này vào tiến trình hôm nay.</string>
     <string name="suggestion_saved_to_diary">Đã thêm %1$s vào nhật ký.</string>
     <string name="suggestion_save_failed">Chưa thêm được món gợi ý. Vui lòng kiểm tra mạng/XAMPP rồi thử lại.</string>
     <string name="analysis_error_message">Có lỗi khi phân tích ảnh. Vui lòng kiểm tra mạng hoặc thử ảnh khác.</string>
